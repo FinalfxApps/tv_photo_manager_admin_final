@@ -1,0 +1,455 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:qr_flutter/qr_flutter.dart';
+
+class FxMasterDb {
+  static final db = FirebaseFirestore.instance;
+  static final categories = db.collection('menu_categories');
+  static final menu = db.collection('menu_items');
+  static final offers = db.collection('offers');
+  static final templates = db.collection('display_templates');
+  static final groups = db.collection('tv_groups');
+  static final devices = db.collection('tv_devices');
+  static final commands = db.collection('tv_commands');
+  static final roles = db.collection('admin_roles');
+  static final audits = db.collection('audit_logs');
+  static final emergency = db.doc('emergency/current');
+  static final qr = db.doc('qr_config/menu');
+}
+
+class FxMasterC {
+  static const bg = Color(0xFF07090E);
+  static const card = Color(0xFF11141B);
+  static const card2 = Color(0xFF151923);
+  static const border = Color(0x12FFFFFF);
+  static const primary = Color(0xFF7656F8);
+  static const red = Color(0xFFE05252);
+}
+
+String fxMasterId() => DateTime.now().microsecondsSinceEpoch.toString();
+
+Future<void> fxMasterAudit(String action, String target, String summary) async {
+  try {
+    final u = FirebaseAuth.instance.currentUser;
+    await FxMasterDb.audits.add({
+      'action': action,
+      'target': target,
+      'summary': summary,
+      'uid': u?.uid ?? '',
+      'email': u?.email ?? '',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  } catch (_) {}
+}
+
+const fxNameStyles = ['3D Glow', '3D Shadow', 'Outline', 'Gradient', 'Minimal'];
+const fxNameColors = ['White', 'Gold', 'Purple', 'Cyan', 'Red'];
+const fxDisplayModes = ['Fullscreen Slideshow', 'Menu Display', 'Mixed Mode'];
+const fxCategoryColors = ['Purple', 'Gold', 'Cyan', 'Red', 'White'];
+const fxAllergens = [
+  'Milk', 'Egg', 'Wheat / Gluten', 'Soy', 'Fish', 'Shellfish',
+  'Peanuts', 'Tree Nuts', 'Sesame'
+];
+const fxBadges = ['Best Seller', 'New', 'Spicy', 'Recommended'];
+
+Future<String?> fxMasterTranslateArabic(String input) async {
+  final q = input.trim();
+  if (q.isEmpty) return null;
+
+  const dictionary = <String, String>{
+    'broast': 'بروست', 'broasted': 'بروستد', 'burger': 'برجر',
+    'burgers': 'برجر', 'chicken': 'دجاج', 'fries': 'بطاطس مقلية',
+    'pizza': 'بيتزا', 'shawarma': 'شاورما', 'sandwich': 'ساندويتش',
+    'sandwiches': 'ساندويتشات', 'nuggets': 'ناجتس', 'wings': 'أجنحة دجاج',
+    'rice': 'أرز', 'salad': 'سلطة', 'dessert': 'حلويات',
+    'desserts': 'حلويات', 'drinks': 'مشروبات', 'beverages': 'مشروبات',
+    'meals': 'وجبات', 'appetizers': 'مقبلات', 'breakfast': 'فطور',
+    'seafood': 'مأكولات بحرية', 'sauce': 'صلصة', 'sauces': 'صلصات',
+    'kids': 'أطفال', 'family meal': 'وجبة عائلية',
+    'family meals': 'وجبات عائلية', 'hot drinks': 'مشروبات ساخنة',
+    'cold drinks': 'مشروبات باردة',
+  };
+  final exact = dictionary[q.toLowerCase()];
+  if (exact != null) return exact;
+
+  try {
+    final uri = Uri.https('translate.googleapis.com', '/translate_a/single', {
+      'client': 'gtx', 'sl': 'en', 'tl': 'ar', 'dt': 't', 'q': q,
+    });
+    final r = await http.get(uri).timeout(const Duration(seconds: 8));
+    if (r.statusCode != 200) return null;
+    final data = jsonDecode(r.body);
+    if (data is List && data.isNotEmpty && data[0] is List) {
+      final parts = <String>[];
+      for (final row in data[0]) {
+        if (row is List && row.isNotEmpty && row[0] != null) {
+          final v = row[0].toString().trim();
+          if (v.isNotEmpty) parts.add(v);
+        }
+      }
+      final result = parts.join();
+      return result.isEmpty ? null : result;
+    }
+  } catch (_) {}
+  return null;
+}
+
+Future<String?> fxMasterUpload(PlatformFile file, String folder) async {
+  try {
+    final bytes = await file.readAsBytes();
+    final safe = file.name.replaceAll(RegExp(r'[/\\]'), '_');
+    final ref = FirebaseStorage.instance.ref().child(folder).child(
+      '${DateTime.now().microsecondsSinceEpoch}_$safe',
+    );
+    await ref.putData(bytes, SettableMetadata(contentType: _mime(file.extension)));
+    return ref.getDownloadURL();
+  } catch (_) {
+    return null;
+  }
+}
+
+String _mime(String? ext) {
+  switch ((ext ?? '').toLowerCase()) {
+    case 'jpg': case 'jpeg': return 'image/jpeg';
+    case 'png': return 'image/png';
+    case 'webp': return 'image/webp';
+    case 'mp4': return 'video/mp4';
+    case 'webm': return 'video/webm';
+    case 'mov': case 'm4v': return 'video/mp4';
+    default: return 'application/octet-stream';
+  }
+}
+
+class FxMasterCategory {
+  FxMasterCategory({required this.id, required this.nameEn, required this.nameAr, required this.order, required this.active, required this.highlight, required this.color});
+  final String id;
+  String nameEn;
+  String nameAr;
+  int order;
+  bool active;
+  bool highlight;
+  String color;
+
+  factory FxMasterCategory.fromDoc(DocumentSnapshot<Map<String, dynamic>> d) {
+    final x = d.data() ?? {};
+    return FxMasterCategory(
+      id: d.id,
+      nameEn: x['nameEn']?.toString() ?? '',
+      nameAr: x['nameAr']?.toString() ?? '',
+      order: (x['order'] as num?)?.toInt() ?? 0,
+      active: x['active'] != false,
+      highlight: x['highlight'] == true,
+      color: x['highlightColor']?.toString() ?? 'Purple',
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+    'nameEn': nameEn, 'nameAr': nameAr, 'order': order,
+    'active': active, 'highlight': highlight, 'highlightColor': color,
+    'updatedAt': FieldValue.serverTimestamp(),
+  };
+}
+
+class FxMasterMenuItem {
+  FxMasterMenuItem({required this.id, required this.nameEn, required this.nameAr, required this.price, required this.calories, required this.categoryId, required this.categoryName, required this.allergens, required this.badges, required this.photoUrl, required this.videoUrl, required this.active, required this.displayMode, required this.nameStyle, required this.nameColor});
+  final String id;
+  String nameEn, nameAr, categoryId, categoryName, photoUrl, videoUrl, displayMode, nameStyle, nameColor;
+  double price;
+  int calories;
+  List<String> allergens, badges;
+  bool active;
+
+  factory FxMasterMenuItem.fromDoc(DocumentSnapshot<Map<String, dynamic>> d) {
+    final x = d.data() ?? {};
+    final a = x['allergens']; final b = x['badges'];
+    return FxMasterMenuItem(
+      id: d.id,
+      nameEn: x['nameEn']?.toString() ?? '',
+      nameAr: x['nameAr']?.toString() ?? '',
+      price: (x['price'] as num?)?.toDouble() ?? 0,
+      calories: (x['calories'] as num?)?.toInt() ?? 0,
+      categoryId: x['categoryId']?.toString() ?? '',
+      categoryName: x['categoryName']?.toString() ?? x['category']?.toString() ?? '',
+      allergens: a is List ? a.map((e) => e.toString()).toList() : <String>[],
+      badges: b is List ? b.map((e) => e.toString()).toList() : <String>[],
+      photoUrl: x['photoUrl']?.toString() ?? '',
+      videoUrl: x['videoUrl']?.toString() ?? '',
+      active: x['active'] != false,
+      displayMode: x['displayMode']?.toString() ?? 'Menu Display',
+      nameStyle: x['nameStyle']?.toString() ?? '3D Glow',
+      nameColor: x['nameColor']?.toString() ?? 'White',
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+    'nameEn': nameEn, 'nameAr': nameAr, 'price': price, 'calories': calories,
+    'categoryId': categoryId, 'categoryName': categoryName, 'category': categoryName,
+    'allergens': allergens, 'badges': badges, 'photoUrl': photoUrl, 'videoUrl': videoUrl,
+    'active': active, 'displayMode': displayMode, 'nameStyle': nameStyle, 'nameColor': nameColor,
+    'updatedAt': FieldValue.serverTimestamp(),
+  };
+}
+
+class FxMasterOffer {
+  FxMasterOffer({required this.id, required this.nameEn, required this.nameAr, required this.oldPrice, required this.offerPrice, required this.imageUrl, required this.startDate, required this.endDate, required this.active});
+  final String id;
+  String nameEn, nameAr, imageUrl;
+  double oldPrice, offerPrice;
+  DateTime startDate, endDate;
+  bool active;
+
+  factory FxMasterOffer.fromDoc(DocumentSnapshot<Map<String, dynamic>> d) {
+    final x = d.data() ?? {};
+    DateTime read(String k) => x[k] is Timestamp ? (x[k] as Timestamp).toDate() : DateTime.now();
+    return FxMasterOffer(
+      id: d.id, nameEn: x['nameEn']?.toString() ?? '', nameAr: x['nameAr']?.toString() ?? '',
+      oldPrice: (x['oldPrice'] as num?)?.toDouble() ?? 0, offerPrice: (x['offerPrice'] as num?)?.toDouble() ?? 0,
+      imageUrl: x['imageUrl']?.toString() ?? '', startDate: read('startDate'), endDate: read('endDate'), active: x['active'] != false,
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+    'nameEn': nameEn, 'nameAr': nameAr, 'oldPrice': oldPrice, 'offerPrice': offerPrice,
+    'imageUrl': imageUrl, 'startDate': Timestamp.fromDate(startDate), 'endDate': Timestamp.fromDate(endDate),
+    'active': active, 'updatedAt': FieldValue.serverTimestamp(),
+  };
+}
+
+class FxRestaurantStudioScreen extends StatefulWidget {
+  const FxRestaurantStudioScreen({super.key});
+  @override
+  State<FxRestaurantStudioScreen> createState() => _FxRestaurantStudioScreenState();
+}
+
+class _FxRestaurantStudioScreenState extends State<FxRestaurantStudioScreen> with TickerProviderStateMixin {
+  late final TabController _tabs;
+  static const labels = ['Overview', 'Categories', 'Menu', 'Offers', 'Templates', 'TV Groups', 'Remote', 'QR Menu', 'Roles', 'Audit'];
+
+  @override
+  void initState() { super.initState(); _tabs = TabController(length: labels.length, vsync: this); }
+  @override
+  void dispose() { _tabs.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      Material(color: FxMasterC.card2, child: TabBar(controller: _tabs, isScrollable: true, tabAlignment: TabAlignment.start, tabs: labels.map((x) => Tab(text: x)).toList())),
+      Expanded(child: TabBarView(controller: _tabs, children: const [
+        _FxOverview(), _FxCategories(), _FxMenu(), _FxOffers(), _FxTemplates(), _FxGroups(), _FxRemote(), _FxQr(), _FxRoles(), _FxAudit(),
+      ])),
+    ]);
+  }
+}
+
+class _FxOverview extends StatelessWidget {
+  const _FxOverview();
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FxMasterDb.menu.snapshots(),
+      builder: (_, menuSnap) => StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: FxMasterDb.devices.snapshots(),
+        builder: (_, tvSnap) {
+          final cards = [
+            _stat('Menu Items', menuSnap.data?.docs.length ?? 0, Icons.restaurant_menu_rounded),
+            _stat('TV Devices', tvSnap.data?.docs.length ?? 0, Icons.tv_rounded),
+            _stat('Online TVs', tvSnap.data?.docs.where((d) => d.data()['status'] == 'online').length ?? 0, Icons.wifi_rounded),
+          ];
+          return SingleChildScrollView(padding: const EdgeInsets.all(24), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Restaurant Studio', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 6),
+            Text('Professional menu, offers, TV control and signage workspace.', style: TextStyle(color: Colors.white.withValues(alpha: .52))),
+            const SizedBox(height: 20),
+            LayoutBuilder(builder: (_, c) {
+              final cols = c.maxWidth >= 900 ? 3 : 1;
+              return GridView.count(crossAxisCount: cols, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), crossAxisSpacing: 14, mainAxisSpacing: 14, childAspectRatio: 2.8, children: cards);
+            }),
+            const SizedBox(height: 20),
+            _panel('Architecture', const Text('Existing Photos & Videos remains untouched. This module uses shared menu_categories, menu_items, offers and TV control collections, then the supplied TV engine can consume them.')),
+          ]);
+        },
+      ),
+    );
+  }
+}
+
+Widget _stat(String title, int value, IconData icon) => _panel(title, Row(children: [Icon(icon, size: 28, color: FxMasterC.primary), const SizedBox(width: 12), Text('$value', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800))]));
+
+class _FxCategories extends StatefulWidget { const _FxCategories(); @override State<_FxCategories> createState() => _FxCategoriesState(); }
+class _FxCategoriesState extends State<_FxCategories> {
+  final list = <FxMasterCategory>[]; bool loading = true;
+  @override void initState() { super.initState(); _load(); }
+  Future<void> _load() async { try { final s = await FxMasterDb.categories.orderBy('order').get(); list..clear()..addAll(s.docs.map(FxMasterCategory.fromDoc)); } catch (_) {} if (mounted) setState(() => loading = false); }
+  Future<void> _edit([FxMasterCategory? existing]) async {
+    final en = TextEditingController(text: existing?.nameEn ?? ''), ar = TextEditingController(text: existing?.nameAr ?? ''), order = TextEditingController(text: '${existing?.order ?? list.length + 1}');
+    var active = existing?.active ?? true, highlight = existing?.highlight ?? true, color = existing?.color ?? 'Purple'; Timer? timer; String last = existing?.nameAr ?? '';
+    Future<void> translate() async { final v = await fxMasterTranslateArabic(en.text); if (!mounted || v == null) return; if (ar.text.trim().isEmpty || ar.text.trim() == last) { ar.text = v; last = v; } }
+    final ok = await showDialog<bool>(context: context, builder: (dialogContext) => StatefulBuilder(builder: (context, setDialog) => AlertDialog(
+      backgroundColor: FxMasterC.card2, title: Text(existing == null ? 'Add Category' : 'Edit Category'),
+      content: SizedBox(width: 560, child: SingleChildScrollView(child: Column(children: [
+        TextField(controller: en, decoration: const InputDecoration(labelText: 'Category Name – English'), onChanged: (_) { timer?.cancel(); timer = Timer(const Duration(milliseconds: 650), () async { await translate(); if (dialogContext.mounted) setDialog(() {}); }); }),
+        const SizedBox(height: 10), TextField(controller: ar, textDirection: TextDirection.rtl, decoration: const InputDecoration(labelText: 'اسم القسم – Arabic', helperText: 'Automatic Arabic; editable.')),
+        const SizedBox(height: 10), TextField(controller: order, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Display Order')),
+        const SizedBox(height: 10), DropdownButtonFormField<String>(initialValue: color, decoration: const InputDecoration(labelText: 'TV Highlight Color'), items: fxCategoryColors.map((x) => DropdownMenuItem(value: x, child: Text(x))).toList(), onChanged: (v) { if (v != null) setDialog(() => color = v); }),
+        SwitchListTile(contentPadding: EdgeInsets.zero, value: highlight, title: const Text('Highlight on TV'), onChanged: (v) => setDialog(() => highlight = v)),
+        SwitchListTile(contentPadding: EdgeInsets.zero, value: active, title: const Text('Active'), onChanged: (v) => setDialog(() => active = v)),
+      ]))),
+      actions: [TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Save Category'))],
+    )));
+    timer?.cancel();
+    if (ok != true) {
+      en.dispose();
+      ar.dispose();
+      order.dispose();
+      return;
+    }
+
+    final nameEn = en.text.trim();
+    final nameAr = ar.text.trim();
+    final orderValue = int.tryParse(order.text.trim()) ?? list.length + 1;
+    en.dispose();
+    ar.dispose();
+    order.dispose();
+    if (nameEn.isEmpty || nameAr.isEmpty) return;
+
+    final item = FxMasterCategory(
+      id: existing?.id ?? fxMasterId(),
+      nameEn: nameEn,
+      nameAr: nameAr,
+      order: orderValue,
+      active: active,
+      highlight: highlight,
+      color: color,
+    );
+    await FxMasterDb.categories.doc(item.id).set(
+      item.toMap(),
+      SetOptions(merge: true),
+    );
+    await fxMasterAudit(
+      existing == null ? 'create' : 'update',
+      'category',
+      '$nameEn / $nameAr',
+    );
+    await _load();
+  }
+  @override Widget build(BuildContext context) => _fxMasterListPage('Categories', 'Create once; reuse everywhere.', FilledButton.icon(onPressed: _edit, icon: const Icon(Icons.add_rounded), label: const Text('Add Category')), loading ? const Center(child: CircularProgressIndicator()) : ListView.separated(padding: const EdgeInsets.all(24), itemCount: list.length, separatorBuilder: (_, __) => const SizedBox(height: 10), itemBuilder: (_, i) { final x = list[i]; return _fxDataCard(x.nameEn, x.nameAr, Wrap(spacing: 6, children: [if (x.highlight) _fxPill('TV ${x.color}'), _fxPill(x.active ? 'Active' : 'Hidden'), IconButton(onPressed: () => _edit(x), icon: const Icon(Icons.edit_rounded)), IconButton(onPressed: () async { await FxMasterDb.categories.doc(x.id).delete(); await _load(); }, color: FxMasterC.red, icon: const Icon(Icons.delete_outline_rounded))])); }));
+}
+
+class _FxMenu extends StatefulWidget { const _FxMenu(); @override State<_FxMenu> createState() => _FxMenuState(); }
+class _FxMenuState extends State<_FxMenu> {
+  final list = <FxMasterMenuItem>[]; final categories = <FxMasterCategory>[]; bool loading = true;
+  @override void initState() { super.initState(); _load(); }
+  Future<void> _load() async { try { final r = await Future.wait([FxMasterDb.menu.orderBy('nameEn').get(), FxMasterDb.categories.orderBy('order').get()]); list..clear()..addAll(r[0].docs.map(FxMasterMenuItem.fromDoc)); categories..clear()..addAll(r[1].docs.map(FxMasterCategory.fromDoc)); } catch (_) {} if (mounted) setState(() => loading = false); }
+  Future<void> _edit([FxMasterMenuItem? existing]) async {
+    final en = TextEditingController(text: existing?.nameEn ?? ''), ar = TextEditingController(text: existing?.nameAr ?? ''), price = TextEditingController(text: existing == null ? '' : '${existing.price}'), kcal = TextEditingController(text: existing == null ? '' : '${existing.calories}');
+    var categoryId = existing?.categoryId ?? ''; var allergens = List<String>.from(existing?.allergens ?? const []); var badges = List<String>.from(existing?.badges ?? const []); var active = existing?.active ?? true; var mode = existing?.displayMode ?? 'Menu Display'; var style = existing?.nameStyle ?? '3D Glow'; var color = existing?.nameColor ?? 'White'; var photo = existing?.photoUrl ?? ''; var video = existing?.videoUrl ?? ''; Timer? timer; String last = existing?.nameAr ?? '';
+    Future<void> translate() async { final v = await fxMasterTranslateArabic(en.text); if (!mounted || v == null) return; if (ar.text.trim().isEmpty || ar.text.trim() == last) { ar.text = v; last = v; } }
+    await showDialog(context: context, builder: (dialogContext) => StatefulBuilder(builder: (context, setDialog) => AlertDialog(backgroundColor: FxMasterC.card2, title: Text(existing == null ? 'Add Menu Item' : 'Edit Menu Item'), content: SizedBox(width: 720, child: SingleChildScrollView(child: Column(children: [
+      TextField(controller: en, decoration: const InputDecoration(labelText: 'Item Name – English'), onChanged: (_) { timer?.cancel(); timer = Timer(const Duration(milliseconds: 650), () async { await translate(); if (dialogContext.mounted) setDialog(() {}); }); }), const SizedBox(height: 10),
+      TextField(controller: ar, textDirection: TextDirection.rtl, decoration: const InputDecoration(labelText: 'اسم الصنف – Arabic', helperText: 'Automatic Arabic; editable.')), const SizedBox(height: 10),
+      Row(children: [Expanded(child: TextField(controller: price, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Final Price (SAR)'))), const SizedBox(width: 10), Expanded(child: TextField(controller: kcal, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Calories (kcal)')))]), const SizedBox(height: 10),
+      DropdownButtonFormField<String>(initialValue: categoryId.isEmpty ? null : categoryId, isExpanded: true, decoration: const InputDecoration(labelText: 'Category'), items: categories.where((x) => x.active).map((x) => DropdownMenuItem(value: x.id, child: Row(children: [Expanded(child: Text(x.nameEn)), const SizedBox(width: 8), Flexible(child: Directionality(textDirection: TextDirection.rtl, child: Text(x.nameAr, overflow: TextOverflow.ellipsis)))]))).toList(), onChanged: (v) { if (v != null) setDialog(() => categoryId = v); }), const SizedBox(height: 10),
+      Align(alignment: Alignment.centerLeft, child: const Text('Allergens', style: TextStyle(fontWeight: FontWeight.w700))), Wrap(spacing: 6, children: fxAllergens.map((x) => FilterChip(label: Text(x), selected: allergens.contains(x), onSelected: (v) => setDialog(() { if (v && !allergens.contains(x)) allergens.add(x); if (!v) allergens.remove(x); })).toList()), const SizedBox(height: 8),
+      Wrap(spacing: 6, children: fxBadges.map((x) => FilterChip(label: Text(x), selected: badges.contains(x), onSelected: (v) => setDialog(() { if (v && !badges.contains(x)) badges.add(x); if (!v) badges.remove(x); }))).toList()), const SizedBox(height: 8),
+      DropdownButtonFormField<String>(initialValue: mode, decoration: const InputDecoration(labelText: 'TV Display Mode'), items: fxDisplayModes.map((x) => DropdownMenuItem(value: x, child: Text(x))).toList(), onChanged: (v) { if (v != null) setDialog(() => mode = v); }), const SizedBox(height: 8),
+      DropdownButtonFormField<String>(initialValue: style, decoration: const InputDecoration(labelText: 'Name Style'), items: fxNameStyles.map((x) => DropdownMenuItem(value: x, child: Text(x))).toList(), onChanged: (v) { if (v != null) setDialog(() => style = v); }), const SizedBox(height: 8),
+      DropdownButtonFormField<String>(initialValue: color, decoration: const InputDecoration(labelText: 'Name Color'), items: fxNameColors.map((x) => DropdownMenuItem(value: x, child: Text(x))).toList(), onChanged: (v) { if (v != null) setDialog(() => color = v); }), const SizedBox(height: 8),
+      Wrap(spacing: 8, children: [OutlinedButton.icon(onPressed: () async { final f = await FilePicker.pickFiles(type: FileType.image); if (f.isEmpty) return; final u = await fxMasterUpload(f.first, 'restaurant/menu/photos'); if (u != null) setDialog(() => photo = u); }, icon: const Icon(Icons.image_rounded), label: Text(photo.isEmpty ? 'Add Photo' : 'Photo Selected')), OutlinedButton.icon(onPressed: () async { final f = await FilePicker.pickFiles(type: FileType.video); if (f.isEmpty) return; final u = await fxMasterUpload(f.first, 'restaurant/menu/videos'); if (u != null) setDialog(() => video = u); }, icon: const Icon(Icons.video_file_rounded), label: Text(video.isEmpty ? 'Add Video' : 'Video Selected'))]),
+      SwitchListTile(contentPadding: EdgeInsets.zero, value: active, title: const Text('Available'), onChanged: (v) => setDialog(() => active = v)),
+    ]))), actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')), FilledButton(onPressed: () async { final p = double.tryParse(price.text.trim()); final k = int.tryParse(kcal.text.trim()) ?? 0; if (en.text.trim().isEmpty || ar.text.trim().isEmpty || p == null || categoryId.isEmpty) return; final c = categories.firstWhere((x) => x.id == categoryId); final item = FxMasterMenuItem(id: existing?.id ?? fxMasterId(), nameEn: en.text.trim(), nameAr: ar.text.trim(), price: p, calories: k, categoryId: c.id, categoryName: c.nameEn, allergens: allergens, badges: badges, photoUrl: photo, videoUrl: video, active: active, displayMode: mode, nameStyle: style, nameColor: color); await FxMasterDb.menu.doc(item.id).set(item.toMap(), SetOptions(merge: true)); await fxMasterAudit(existing == null ? 'create' : 'update', 'menu_item', item.nameEn); if (dialogContext.mounted) Navigator.pop(dialogContext); }, child: const Text('Save Item'))]));
+    timer?.cancel(); en.dispose(); ar.dispose(); price.dispose(); kcal.dispose(); await _load();
+  }
+  @override Widget build(BuildContext context) => _fxMasterListPage('Menu Items', 'Final SAR price + reusable category + premium TV styling.', FilledButton.icon(onPressed: _edit, icon: const Icon(Icons.add_rounded), label: const Text('Add Menu Item')), loading ? const Center(child: CircularProgressIndicator()) : ListView.separated(padding: const EdgeInsets.all(24), itemCount: list.length, separatorBuilder: (_, __) => const SizedBox(height: 10), itemBuilder: (_, i) { final x = list[i]; return _fxDataCard(x.nameEn, '${x.nameAr} • ${x.categoryName} • SAR ${x.price.toStringAsFixed(2)} • ${x.calories} kcal', Wrap(spacing: 6, children: [_fxPill(x.active ? 'Available' : 'Hidden'), IconButton(onPressed: () => _edit(x), icon: const Icon(Icons.edit_rounded)), IconButton(onPressed: () async { await FxMasterDb.menu.doc(x.id).delete(); await _load(); }, color: FxMasterC.red, icon: const Icon(Icons.delete_outline_rounded))])); }));
+}
+
+class _FxOffers extends StatefulWidget { const _FxOffers(); @override State<_FxOffers> createState() => _FxOffersState(); }
+class _FxOffersState extends State<_FxOffers> {
+  final list = <FxMasterOffer>[]; bool loading = true;
+  @override void initState() { super.initState(); _load(); }
+  Future<void> _load() async { try { final s = await FxMasterDb.offers.orderBy('startDate').get(); list..clear()..addAll(s.docs.map(FxMasterOffer.fromDoc)); } catch (_) {} if (mounted) setState(() => loading = false); }
+  Future<void> _edit([FxMasterOffer? existing]) async {
+    final en = TextEditingController(text: existing?.nameEn ?? ''), ar = TextEditingController(text: existing?.nameAr ?? ''), oldP = TextEditingController(text: existing == null ? '' : '${existing.oldPrice}'), newP = TextEditingController(text: existing == null ? '' : '${existing.offerPrice}'); var start = existing?.startDate ?? DateTime.now(); var end = existing?.endDate ?? DateTime.now().add(const Duration(days: 7)); var active = existing?.active ?? true; var image = existing?.imageUrl ?? '';
+    await showDialog(context: context, builder: (dialogContext) => StatefulBuilder(builder: (context, setDialog) => AlertDialog(backgroundColor: FxMasterC.card2, title: Text(existing == null ? 'Add Offer' : 'Edit Offer'), content: SizedBox(width: 620, child: SingleChildScrollView(child: Column(children: [TextField(controller: en, decoration: const InputDecoration(labelText: 'Offer Name – English')), const SizedBox(height: 10), TextField(controller: ar, textDirection: TextDirection.rtl, decoration: const InputDecoration(labelText: 'اسم العرض – Arabic')), const SizedBox(height: 10), Row(children: [Expanded(child: TextField(controller: oldP, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Old Price'))), const SizedBox(width: 10), Expanded(child: TextField(controller: newP, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Offer Price')))]), ListTile(contentPadding: EdgeInsets.zero, title: const Text('Start Date'), trailing: Text(_date(start)), onTap: () async { final d = await showDatePicker(context: context, firstDate: DateTime(2020), lastDate: DateTime(2100), initialDate: start); if (d != null) setDialog(() => start = d); }), ListTile(contentPadding: EdgeInsets.zero, title: const Text('End Date'), trailing: Text(_date(end)), onTap: () async { final d = await showDatePicker(context: context, firstDate: DateTime(2020), lastDate: DateTime(2100), initialDate: end); if (d != null) setDialog(() => end = d); }), OutlinedButton.icon(onPressed: () async { final f = await FilePicker.pickFiles(type: FileType.image); if (f.isEmpty) return; final u = await fxMasterUpload(f.first, 'restaurant/offers'); if (u != null) setDialog(() => image = u); }, icon: const Icon(Icons.image_rounded), label: Text(image.isEmpty ? 'Add Offer Image' : 'Image Selected')), SwitchListTile(contentPadding: EdgeInsets.zero, value: active, title: const Text('Active'), onChanged: (v) => setDialog(() => active = v))])), actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')), FilledButton(onPressed: () async { final o = double.tryParse(oldP.text.trim()), n = double.tryParse(newP.text.trim()); if (en.text.trim().isEmpty || ar.text.trim().isEmpty || o == null || n == null) return; final item = FxMasterOffer(id: existing?.id ?? fxMasterId(), nameEn: en.text.trim(), nameAr: ar.text.trim(), oldPrice: o, offerPrice: n, imageUrl: image, startDate: start, endDate: end, active: active); await FxMasterDb.offers.doc(item.id).set(item.toMap(), SetOptions(merge: true)); await fxMasterAudit(existing == null ? 'create' : 'update', 'offer', item.nameEn); if (dialogContext.mounted) Navigator.pop(dialogContext); }, child: const Text('Save Offer'))]))); en.dispose(); ar.dispose(); oldP.dispose(); newP.dispose(); await _load();
+  }
+  @override Widget build(BuildContext context) => _fxMasterListPage('Offers', 'Date-based promotions with expiry.', FilledButton.icon(onPressed: _edit, icon: const Icon(Icons.add_rounded), label: const Text('Add Offer')), loading ? const Center(child: CircularProgressIndicator()) : ListView.separated(padding: const EdgeInsets.all(24), itemCount: list.length, separatorBuilder: (_, __) => const SizedBox(height: 10), itemBuilder: (_, i) { final x = list[i]; return _fxDataCard(x.nameEn, '${x.nameAr} • SAR ${x.oldPrice.toStringAsFixed(2)} → SAR ${x.offerPrice.toStringAsFixed(2)} • ${_date(x.startDate)} - ${_date(x.endDate)}', Wrap(spacing: 6, children: [_fxPill(x.active ? 'Active' : 'Hidden'), IconButton(onPressed: () => _edit(x), icon: const Icon(Icons.edit_rounded)), IconButton(onPressed: () async { await FxMasterDb.offers.doc(x.id).delete(); await _load(); }, color: FxMasterC.red, icon: const Icon(Icons.delete_outline_rounded))])); }));
+}
+
+class _FxTemplates extends StatelessWidget { const _FxTemplates(); @override Widget build(BuildContext context) => _simpleCollection('TV Templates', FxMasterDb.templates, Icons.dashboard_customize_rounded, ['Fullscreen Photo', 'Photo + Price', 'Menu Grid', 'Premium Restaurant', 'Split Screen', 'Offers Screen', 'Mixed Slideshow']); }
+class _FxGroups extends StatelessWidget { const _FxGroups(); @override Widget build(BuildContext context) => _simpleCollection('TV Groups', FxMasterDb.groups, Icons.groups_rounded, const ['Active', 'Hidden']); }
+
+class _FxRemote extends StatefulWidget { const _FxRemote(); @override State<_FxRemote> createState() => _FxRemoteState(); }
+class _FxRemoteState extends State<_FxRemote> {
+  bool group = true; String target = ''; String note = '';
+  final groups = <QueryDocumentSnapshot<Map<String, dynamic>>>[]; final tvs = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+  @override void initState() { super.initState(); _load(); }
+  Future<void> _load() async { try { final r = await Future.wait([FxMasterDb.groups.orderBy('name').get(), FxMasterDb.devices.orderBy('name').get()]); groups..clear()..addAll(r[0].docs); tvs..clear()..addAll(r[1].docs); if (target.isEmpty) target = group && groups.isNotEmpty ? groups.first.id : (!group && tvs.isNotEmpty ? tvs.first.id : ''); } catch (_) {} if (mounted) setState(() {}); }
+  Future<void> _send(String command) async { if (target.isEmpty) return; await FxMasterDb.commands.add({'targetId': target, 'targetType': group ? 'group' : 'device', 'command': command, 'note': note.trim(), 'processed': false, 'createdAt': FieldValue.serverTimestamp(), 'sourceUid': FirebaseAuth.instance.currentUser?.uid ?? ''}); await fxMasterAudit('remote', group ? 'tv_group' : 'tv_device', '$command → $target'); if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Command sent: $command'))); }
+  Future<void> _emergency(bool on) async { await FxMasterDb.emergency.set({'enabled': on, 'title': on ? 'EMERGENCY' : '', 'message': on ? 'Please follow staff instructions.' : '', 'updatedAt': FieldValue.serverTimestamp()}, SetOptions(merge: true)); }
+  @override Widget build(BuildContext context) { final list = group ? groups : tvs; return SingleChildScrollView(padding: const EdgeInsets.all(24), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('TV Remote', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)), const SizedBox(height: 14), SegmentedButton<bool>(segments: const [ButtonSegment(value: true, label: Text('Group')), ButtonSegment(value: false, label: Text('TV'))], selected: {group}, onSelectionChanged: (v) { group = v.first; target = ''; _load(); }), const SizedBox(height: 12), DropdownButtonFormField<String>(initialValue: target.isEmpty ? null : target, items: list.map((x) => DropdownMenuItem(value: x.id, child: Text(x.data()['name']?.toString() ?? x.id))).toList(), onChanged: (v) => setState(() => target = v ?? ''), decoration: const InputDecoration(labelText: 'Target')), const SizedBox(height: 12), TextField(decoration: const InputDecoration(labelText: 'Command note'), onChanged: (v) => note = v), const SizedBox(height: 14), Wrap(spacing: 8, runSpacing: 8, children: ['Play', 'Pause', 'Previous', 'Next', 'Refresh', 'Mute', 'Unmute', 'Restart'].map((x) => FilledButton.tonal(onPressed: () => _send(x), child: Text(x))).toList()), const SizedBox(height: 20), _panel('Emergency Display', Wrap(spacing: 8, children: [FilledButton(onPressed: () => _emergency(true), child: const Text('Emergency ON')), OutlinedButton(onPressed: () => _emergency(false), child: const Text('Emergency OFF'))]))])); }
+}
+
+class _FxQr extends StatefulWidget { const _FxQr(); @override State<_FxQr> createState() => _FxQrState(); }
+class _FxQrState extends State<_FxQr> { final url = TextEditingController(); bool enabled = true; bool loading = true; @override void initState() { super.initState(); _load(); } Future<void> _load() async { try { final d = await FxMasterDb.qr.get(); final x = d.data() ?? {}; url.text = x['url']?.toString() ?? ''; enabled = x['enabled'] != false; } catch (_) {} if (mounted) setState(() => loading = false); } Future<void> _save() async { await FxMasterDb.qr.set({'url': url.text.trim(), 'enabled': enabled, 'updatedAt': FieldValue.serverTimestamp()}, SetOptions(merge: true)); } @override void dispose() { url.dispose(); super.dispose(); } @override Widget build(BuildContext context) { if (loading) return const Center(child: CircularProgressIndicator()); final data = url.text.trim().isEmpty ? 'https://example.com/menu' : url.text.trim(); return SingleChildScrollView(padding: const EdgeInsets.all(24), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('QR Menu', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)), const SizedBox(height: 12), TextField(controller: url, decoration: const InputDecoration(labelText: 'Public Menu URL'), onChanged: (_) => setState(() {})), SwitchListTile(value: enabled, title: const Text('QR Enabled'), onChanged: (v) => setState(() => enabled = v)), FilledButton(onPressed: _save, child: const Text('Save QR')), const SizedBox(height: 20), Center(child: Container(color: Colors.white, padding: const EdgeInsets.all(18), child: QrImageView(data: data, size: 240))) ])); } }
+
+class _FxRoles extends StatelessWidget { const _FxRoles(); @override Widget build(BuildContext context) => _simpleCollection('Roles', FxMasterDb.roles, Icons.person_rounded, const ['owner', 'manager', 'content', 'viewer']); }
+class _FxAudit extends StatelessWidget { const _FxAudit(); @override Widget build(BuildContext context) => StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(stream: FxMasterDb.audits.orderBy('createdAt', descending: true).limit(200).snapshots(), builder: (_, s) => ListView.separated(padding: const EdgeInsets.all(24), itemCount: s.data?.docs.length ?? 0, separatorBuilder: (_, __) => const SizedBox(height: 8), itemBuilder: (_, i) { final d = s.data!.docs[i].data(); return _fxDataCard('${d['action'] ?? ''} • ${d['target'] ?? ''}', '${d['summary'] ?? ''} • ${d['email'] ?? ''}', const SizedBox()); })); }
+
+Widget _simpleCollection(
+  String title,
+  CollectionReference<Map<String, dynamic>> collection,
+  IconData icon,
+  List<String> choices,
+) {
+  return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+    stream: collection.orderBy('name').snapshots(),
+    builder: (_, snapshot) {
+      final docs =
+          snapshot.data?.docs ??
+          const <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+
+      return _fxMasterListPage(
+        title,
+        'Shared management collection.',
+        FilledButton.icon(
+          onPressed: () {},
+          icon: const Icon(Icons.add_rounded),
+          label: const Text('Add'),
+        ),
+        ListView.separated(
+          padding: const EdgeInsets.all(24),
+          itemCount: docs.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                                               al                                               al
+            final name =
+                data['name']?.toString().trim().isNotEmpty == true
+                                          g()
+                    : d.id;
+
+            final subtitle =
+                data['layout']?                data           data['role']?.toString() ??
+                data['status']?.toString() ??
+                '';
+
+            return _fxDataCard(
+              name,
+                                         n(icon),
+            );
+          },
+        ),
+      );
+    },
+  );
+}
+
+Widget _fxMasterListPage(String title, String subtitle, Widget action, Widget child) => Column(children: [Padding(padding: const EdgeInsets.fromLTRB(24, 20, 24, 8), child: Row(children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)), const SizedBox(height: 4), Text(subtitle, style: TextStyle(color: Colors.white.withValues(alpha: .5)))])), action])), Expanded(child: child)]);
+Widget _fxDataCard(String title, String subtitle, Widget trailing) => Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: FxMasterC.card, borderRadius: BorderRadius.circular(16), border: Border.all(color: FxMasterC.border)), child: Row(children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.w700)), const SizedBox(height: 4), Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white60))])), trailing]));
+Widget _fxPill(String text) => Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5), decoration: BoxDecoration(color: FxMasterC.primary.withValues(alpha: .12), borderRadius: BorderRadius.circular(8)), child: Text(text, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)));
+Widget _panel(String title, Widget child) => Container(width: double.infinity, padding: const EdgeInsets.all(18), decoration: BoxDecoration(color: FxMasterC.card, borderRadius: BorderRadius.circular(18), border: Border.all(color: FxMasterC.border)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.w700)), const SizedBox(height: 10), child]));
+String _date(DateTime d) => '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';

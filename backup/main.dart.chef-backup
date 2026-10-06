@@ -1,0 +1,798 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const FxKdsApp());
+}
+
+class FxKdsApp extends StatelessWidget {
+  const FxKdsApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'FXpos KDS',
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFF020A10),
+        fontFamily: 'Arial',
+      ),
+      home: const KdsScreen(),
+    );
+  }
+}
+
+enum OrderStatus { newOrder, cooking, ready }
+enum OrderType { dineIn, takeaway, delivery }
+enum KitchenCategory { all, grill, fry, drinks, others }
+
+class Modifier {
+  final String label;
+  final IconData icon;
+  final bool remove;
+
+  const Modifier({required this.label, required this.icon, this.remove = false});
+}
+
+class KdsItem {
+  final String name;
+  final String shortName;
+  final IconData icon;
+  final int qty;
+  final List<Modifier> modifiers;
+
+  const KdsItem({
+    required this.name,
+    required this.shortName,
+    required this.icon,
+    required this.qty,
+    this.modifiers = const [],
+  });
+}
+
+class KdsOrder {
+  final String id;
+  final OrderType type;
+  final String table;
+  final int initialElapsedSeconds;
+  final KitchenCategory category;
+  final List<KdsItem> items;
+  OrderStatus status;
+  int elapsedSeconds;
+
+  KdsOrder({
+    required this.id,
+    required this.type,
+    required this.table,
+    required this.initialElapsedSeconds,
+    required this.category,
+    required this.items,
+    required this.status,
+  }) : elapsedSeconds = initialElapsedSeconds;
+
+  bool get isReady => status == OrderStatus.ready;
+}
+
+class KdsScreen extends StatefulWidget {
+  const KdsScreen({super.key});
+
+  @override
+  State<KdsScreen> createState() => _KdsScreenState();
+}
+
+class _KdsScreenState extends State<KdsScreen> {
+  late final Timer _timer;
+  KitchenCategory _selectedCategory = KitchenCategory.all;
+  late final List<KdsOrder> _orders;
+
+  @override
+  void initState() {
+    super.initState();
+    _orders = _seedOrders();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        for (final order in _orders) {
+          if (order.status != OrderStatus.ready) {
+            order.elapsedSeconds++;
+          }
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  List<KdsOrder> _seedOrders() {
+    return [
+      KdsOrder(
+        id: '1042',
+        type: OrderType.dineIn,
+        table: 'T12',
+        initialElapsedSeconds: 275,
+        category: KitchenCategory.grill,
+        status: OrderStatus.newOrder,
+        items: const [
+          KdsItem(
+            name: 'Classic Burger',
+            shortName: 'Burger',
+            icon: Icons.lunch_dining,
+            qty: 2,
+            modifiers: [
+              Modifier(label: 'Tomato', icon: Icons.circle),
+              Modifier(label: 'Onion', icon: Icons.circle),
+              Modifier(label: 'Cheese', icon: Icons.change_history),
+            ],
+          ),
+          KdsItem(
+            name: 'French Fries',
+            shortName: 'Fries',
+            icon: Icons.fastfood,
+            qty: 1,
+            modifiers: [Modifier(label: 'Ketchup', icon: Icons.water_drop)],
+          ),
+        ],
+      ),
+      KdsOrder(
+        id: '1043',
+        type: OrderType.takeaway,
+        table: 'Takeaway',
+        initialElapsedSeconds: 432,
+        category: KitchenCategory.grill,
+        status: OrderStatus.cooking,
+        items: const [
+          KdsItem(name: 'Chicken Wings', shortName: 'Wings', icon: Icons.set_meal, qty: 3, modifiers: [Modifier(label: 'Spicy', icon: Icons.local_fire_department)]),
+          KdsItem(name: 'Chicken Rice', shortName: 'Rice', icon: Icons.rice_bowl, qty: 2),
+          KdsItem(name: 'Garlic Bread', shortName: 'Garlic Bread', icon: Icons.bakery_dining, qty: 1, modifiers: [Modifier(label: 'Garlic Sauce', icon: Icons.circle)]),
+        ],
+      ),
+      KdsOrder(
+        id: '1044',
+        type: OrderType.delivery,
+        table: 'Delivery',
+        initialElapsedSeconds: 725,
+        category: KitchenCategory.others,
+        status: OrderStatus.cooking,
+        items: const [
+          KdsItem(name: 'Large Pizza', shortName: 'Pizza', icon: Icons.local_pizza, qty: 1, modifiers: [Modifier(label: 'Tomato', icon: Icons.circle), Modifier(label: 'Mushroom', icon: Icons.circle)]),
+          KdsItem(name: 'Hot Wings', shortName: 'Wings', icon: Icons.set_meal, qty: 2, modifiers: [Modifier(label: 'Spicy', icon: Icons.local_fire_department)]),
+        ],
+      ),
+      KdsOrder(
+        id: '1045',
+        type: OrderType.dineIn,
+        table: 'T8',
+        initialElapsedSeconds: 138,
+        category: KitchenCategory.grill,
+        status: OrderStatus.newOrder,
+        items: const [
+          KdsItem(name: 'Double Burger', shortName: 'Burger', icon: Icons.lunch_dining, qty: 1, modifiers: [Modifier(label: 'No Tomato', icon: Icons.remove_circle_outline, remove: true), Modifier(label: 'No Mushroom', icon: Icons.remove_circle_outline, remove: true)]),
+          KdsItem(name: 'French Fries', shortName: 'Fries', icon: Icons.fastfood, qty: 2, modifiers: [Modifier(label: 'Ketchup', icon: Icons.water_drop)]),
+          KdsItem(name: 'Soft Drink', shortName: 'Drink', icon: Icons.local_drink, qty: 3),
+        ],
+      ),
+      KdsOrder(
+        id: '1046',
+        type: OrderType.takeaway,
+        table: 'Takeaway',
+        initialElapsedSeconds: 570,
+        category: KitchenCategory.fry,
+        status: OrderStatus.cooking,
+        items: const [
+          KdsItem(name: 'Chicken Wrap', shortName: 'Wrap', icon: Icons.wrap_text, qty: 2, modifiers: [Modifier(label: 'Lettuce', icon: Icons.eco), Modifier(label: 'No Onion', icon: Icons.remove_circle_outline, remove: true)]),
+          KdsItem(name: 'Fried Chicken', shortName: 'Chicken', icon: Icons.set_meal, qty: 1, modifiers: [Modifier(label: 'Ketchup', icon: Icons.water_drop)]),
+        ],
+      ),
+      KdsOrder(
+        id: '1047',
+        type: OrderType.delivery,
+        table: 'Delivery',
+        initialElapsedSeconds: 200,
+        category: KitchenCategory.drinks,
+        status: OrderStatus.newOrder,
+        items: const [
+          KdsItem(name: 'Crispy Burger', shortName: 'Burger', icon: Icons.lunch_dining, qty: 1, modifiers: [Modifier(label: 'Lettuce', icon: Icons.eco)]),
+          KdsItem(name: 'French Fries', shortName: 'Fries', icon: Icons.fastfood, qty: 1),
+          KdsItem(name: 'Orange Juice', shortName: 'Juice', icon: Icons.local_drink, qty: 2, modifiers: [Modifier(label: 'Fresh Orange', icon: Icons.circle)]),
+        ],
+      ),
+      KdsOrder(
+        id: '1048',
+        type: OrderType.dineIn,
+        table: 'T5',
+        initialElapsedSeconds: 940,
+        category: KitchenCategory.grill,
+        status: OrderStatus.cooking,
+        items: const [
+          KdsItem(name: 'Creamy Pasta', shortName: 'Pasta', icon: Icons.ramen_dining, qty: 2, modifiers: [Modifier(label: 'Mushroom', icon: Icons.circle), Modifier(label: 'Cheese', icon: Icons.change_history)]),
+          KdsItem(name: 'Fresh Salad', shortName: 'Salad', icon: Icons.eco, qty: 1, modifiers: [Modifier(label: 'Tomato', icon: Icons.circle), Modifier(label: 'Cucumber', icon: Icons.circle)]),
+        ],
+      ),
+      KdsOrder(
+        id: '1049',
+        type: OrderType.takeaway,
+        table: 'Takeaway',
+        initialElapsedSeconds: 115,
+        category: KitchenCategory.fry,
+        status: OrderStatus.newOrder,
+        items: const [
+          KdsItem(name: 'Crispy Chicken', shortName: 'Chicken', icon: Icons.set_meal, qty: 4, modifiers: [Modifier(label: 'Spicy', icon: Icons.local_fire_department)]),
+          KdsItem(name: 'French Fries', shortName: 'Fries', icon: Icons.fastfood, qty: 2),
+          KdsItem(name: 'Cola', shortName: 'Drink', icon: Icons.local_drink, qty: 2),
+        ],
+      ),
+    ];
+  }
+
+  List<KdsOrder> get _visibleOrders {
+    if (_selectedCategory == KitchenCategory.all) return _orders;
+    return _orders.where((o) => o.category == _selectedCategory).toList();
+  }
+
+  Color _statusColor(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.newOrder:
+        return const Color(0xFF19E76E);
+      case OrderStatus.cooking:
+        return const Color(0xFFFF8A00);
+      case OrderStatus.ready:
+        return const Color(0xFF2D9CFF);
+    }
+  }
+
+  String _formatDuration(int totalSeconds) {
+    final minutes = totalSeconds ~/ 60;
+    final seconds = totalSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  int _categoryCount(KitchenCategory category) {
+    if (category == KitchenCategory.all) return _orders.length + 4;
+    return _orders.where((o) => o.category == category).length;
+  }
+
+  void _nextStatus(KdsOrder order) {
+    setState(() {
+      switch (order.status) {
+        case OrderStatus.newOrder:
+          order.status = OrderStatus.cooking;
+          break;
+        case OrderStatus.cooking:
+          order.status = OrderStatus.ready;
+          break;
+        case OrderStatus.ready:
+          order.status = OrderStatus.newOrder;
+          break;
+      }
+    });
+  }
+
+  void _showOrderMenu(KdsOrder order) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF0A151D),
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Order #${order.id}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 14),
+              ListTile(
+                leading: const Icon(Icons.play_arrow_rounded),
+                title: const Text('Start / Next Status'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _nextStatus(order);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.print_rounded),
+                title: const Text('Print KOT'),
+                onTap: () => Navigator.pop(context),
+              ),
+              ListTile(
+                leading: const Icon(Icons.visibility_off_rounded),
+                title: const Text('Hide Order'),
+                onTap: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxWidth < 850;
+            final columns = constraints.maxWidth >= 1450
+                ? 4
+                : constraints.maxWidth >= 1050
+                    ? 3
+                    : constraints.maxWidth >= 650
+                        ? 2
+                        : 1;
+
+            return Column(
+              children: [
+                _buildTopBar(isCompact),
+                const SizedBox(height: 10),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: GridView.builder(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      physics: const BouncingScrollPhysics(),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: columns,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: isCompact ? 1.05 : 1.03,
+                      ),
+                      itemCount: _visibleOrders.length,
+                      itemBuilder: (_, index) => _OrderCard(
+                        order: _visibleOrders[index],
+                        statusColor: _statusColor(_visibleOrders[index].status),
+                        elapsedText: _formatDuration(_visibleOrders[index].elapsedSeconds),
+                        onStatusTap: () => _nextStatus(_visibleOrders[index]),
+                        onMenuTap: () => _showOrderMenu(_visibleOrders[index]),
+                      ),
+                    ),
+                  ),
+                ),
+                _buildLegend(isCompact),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopBar(bool compact) {
+    final date = DateTime.now();
+    final time = '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    final dateText = '${_weekday(date.weekday)}, ${date.day} ${_month(date.month)} ${date.year}';
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF06131C),
+        border: Border.all(color: Colors.white.withOpacity(.08)),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: compact
+          ? Column(
+              children: [
+                Row(
+                  children: [
+                    _AllOrdersChip(count: _categoryCount(KitchenCategory.all)),
+                    const Spacer(),
+                    const Icon(Icons.notifications_rounded, size: 29),
+                    const SizedBox(width: 9),
+                    Text(time, style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w900)),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _CategoryChip(label: 'Grill', count: _categoryCount(KitchenCategory.grill), icon: Icons.local_fire_department, selected: _selectedCategory == KitchenCategory.grill, onTap: () => setState(() => _selectedCategory = KitchenCategory.grill)),
+                      _CategoryChip(label: 'Fry', count: _categoryCount(KitchenCategory.fry), icon: Icons.fastfood, selected: _selectedCategory == KitchenCategory.fry, onTap: () => setState(() => _selectedCategory = KitchenCategory.fry)),
+                      _CategoryChip(label: 'Drinks', count: _categoryCount(KitchenCategory.drinks), icon: Icons.local_drink, selected: _selectedCategory == KitchenCategory.drinks, onTap: () => setState(() => _selectedCategory = KitchenCategory.drinks)),
+                      _CategoryChip(label: 'Others', count: _categoryCount(KitchenCategory.others), icon: Icons.ramen_dining, selected: _selectedCategory == KitchenCategory.others, onTap: () => setState(() => _selectedCategory = KitchenCategory.others)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Align(alignment: Alignment.centerLeft, child: Text(dateText, style: const TextStyle(color: Colors.white60, fontSize: 12, fontWeight: FontWeight.w700))),
+              ],
+            )
+          : Row(
+              children: [
+                _AllOrdersChip(count: _categoryCount(KitchenCategory.all)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _CategoryChip(label: 'Grill', count: _categoryCount(KitchenCategory.grill), icon: Icons.local_fire_department, selected: _selectedCategory == KitchenCategory.grill, onTap: () => setState(() => _selectedCategory = KitchenCategory.grill)),
+                        _CategoryChip(label: 'Fry', count: _categoryCount(KitchenCategory.fry), icon: Icons.fastfood, selected: _selectedCategory == KitchenCategory.fry, onTap: () => setState(() => _selectedCategory = KitchenCategory.fry)),
+                        _CategoryChip(label: 'Drinks', count: _categoryCount(KitchenCategory.drinks), icon: Icons.local_drink, selected: _selectedCategory == KitchenCategory.drinks, onTap: () => setState(() => _selectedCategory = KitchenCategory.drinks)),
+                        _CategoryChip(label: 'Others', count: _categoryCount(KitchenCategory.others), icon: Icons.ramen_dining, selected: _selectedCategory == KitchenCategory.others, onTap: () => setState(() => _selectedCategory = KitchenCategory.others)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                const Badge(label: Text('2'), child: Icon(Icons.notifications_rounded, size: 30)),
+                const SizedBox(width: 14),
+                Container(width: 1, height: 36, color: Colors.white24),
+                const SizedBox(width: 14),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(time, style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w900, height: 1)),
+                    const SizedBox(height: 3),
+                    Text(dateText, style: const TextStyle(color: Colors.white60, fontSize: 11, fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildLegend(bool compact) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: const Color(0xFF07131B),
+        border: Border.all(color: Colors.white.withOpacity(.08)),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _legendGroup('Order Type', [
+              _LegendItem(Icons.table_restaurant_rounded, 'Dine In'),
+              _LegendItem(Icons.shopping_bag_rounded, 'Takeaway'),
+              _LegendItem(Icons.delivery_dining_rounded, 'Delivery'),
+            ]),
+            _legendDivider(),
+            _legendGroup('Modifiers', [
+              _LegendItem(Icons.circle, 'Tomato'),
+              _LegendItem(Icons.circle_outlined, 'Onion'),
+              _LegendItem(Icons.eco_rounded, 'Lettuce'),
+              _LegendItem(Icons.change_history, 'Cheese'),
+              _LegendItem(Icons.circle_outlined, 'Mushroom'),
+              _LegendItem(Icons.local_fire_department, 'Spicy'),
+              _LegendItem(Icons.water_drop, 'Garlic Sauce'),
+              _LegendItem(Icons.remove_circle_outline, 'No / Remove'),
+            ]),
+            _legendDivider(),
+            _legendGroup('Status', [
+              _LegendStatus(Colors.greenAccent, 'New'),
+              _LegendStatus(Colors.orangeAccent, 'Cooking'),
+              _LegendStatus(Colors.lightBlueAccent, 'Ready'),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _legendGroup(String title, List<Widget> items) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(title, style: const TextStyle(fontSize: 11, color: Colors.white60, fontWeight: FontWeight.w800)),
+        const SizedBox(width: 10),
+        ...items.expand((w) => [w, const SizedBox(width: 10)]).toList(),
+      ],
+    );
+  }
+
+  Widget _legendDivider() => Container(width: 1, height: 30, color: Colors.white12, margin: const EdgeInsets.symmetric(horizontal: 6));
+
+  String _weekday(int value) {
+    const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return names[value - 1];
+  }
+
+  String _month(int value) {
+    const names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return names[value - 1];
+  }
+}
+
+class _OrderCard extends StatelessWidget {
+  final KdsOrder order;
+  final Color statusColor;
+  final String elapsedText;
+  final VoidCallback onStatusTap;
+  final VoidCallback onMenuTap;
+
+  const _OrderCard({
+    required this.order,
+    required this.statusColor,
+    required this.elapsedText,
+    required this.onStatusTap,
+    required this.onMenuTap,
+  });
+
+  IconData _orderIcon(OrderType type) {
+    switch (type) {
+      case OrderType.dineIn:
+        return Icons.table_restaurant_rounded;
+      case OrderType.takeaway:
+        return Icons.shopping_bag_rounded;
+      case OrderType.delivery:
+        return Icons.delivery_dining_rounded;
+    }
+  }
+
+  String _orderLabel() {
+    switch (order.type) {
+      case OrderType.dineIn:
+        return order.table;
+      case OrderType.takeaway:
+        return 'TAKE';
+      case OrderType.delivery:
+        return 'DEL';
+    }
+  }
+
+  String _statusText() {
+    switch (order.status) {
+      case OrderStatus.newOrder:
+        return 'NEW';
+      case OrderStatus.cooking:
+        return 'COOKING';
+      case OrderStatus.ready:
+        return 'READY';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF0B1821), Color(0xFF030C12)]),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: statusColor, width: 2.2),
+        boxShadow: [BoxShadow(color: statusColor.withOpacity(.11), blurRadius: 14, spreadRadius: 1)],
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 8, 8),
+            child: Row(
+              children: [
+                Text('#${order.id}', style: const TextStyle(fontSize: 27, fontWeight: FontWeight.w900)),
+                const SizedBox(width: 9),
+                Icon(_orderIcon(order.type), size: 24),
+                const SizedBox(width: 5),
+                Flexible(child: Text(_orderLabel(), overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900))),
+                const Spacer(),
+                Text(elapsedText, style: TextStyle(color: statusColor, fontSize: 22, fontWeight: FontWeight.w900)),
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: Colors.white12),
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: order.items.length,
+              separatorBuilder: (_, __) => const Divider(height: 8, color: Colors.white10),
+              itemBuilder: (_, index) => _ItemRow(item: order.items[index]),
+            ),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: Material(
+                  color: statusColor.withOpacity(.9),
+                  borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(13)),
+                  child: InkWell(
+                    onTap: onStatusTap,
+                    borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(13)),
+                    child: SizedBox(
+                      height: 48,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(order.status == OrderStatus.ready ? Icons.check_circle : Icons.restaurant_rounded, color: Colors.black, size: 22),
+                          const SizedBox(width: 8),
+                          Text(_statusText(), style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.w900)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Material(
+                color: Colors.black.withOpacity(.45),
+                borderRadius: const BorderRadius.only(bottomRight: Radius.circular(13)),
+                child: InkWell(
+                  onTap: onMenuTap,
+                  borderRadius: const BorderRadius.only(bottomRight: Radius.circular(13)),
+                  child: const SizedBox(width: 54, height: 48, child: Icon(Icons.more_horiz_rounded, size: 25)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ItemRow extends StatelessWidget {
+  final KdsItem item;
+
+  const _ItemRow({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          width: 54,
+          height: 54,
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(.06),
+            borderRadius: BorderRadius.circular(13),
+            border: Border.all(color: Colors.white10),
+          ),
+          child: Icon(item.icon, size: 31, color: Colors.white),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(item.shortName, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+              if (item.modifiers.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: item.modifiers.take(4).map((m) => _ModifierBadge(modifier: m)).toList(),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          constraints: const BoxConstraints(minWidth: 43),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+          decoration: BoxDecoration(color: Colors.white.withOpacity(.08), borderRadius: BorderRadius.circular(10)),
+          child: Text('${item.qty}x', textAlign: TextAlign.center, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+        ),
+      ],
+    );
+  }
+}
+
+class _ModifierBadge extends StatelessWidget {
+  final Modifier modifier;
+
+  const _ModifierBadge({required this.modifier});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+      decoration: BoxDecoration(
+        color: modifier.remove ? Colors.red.withOpacity(.16) : Colors.white.withOpacity(.06),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: modifier.remove ? Colors.redAccent : Colors.white12),
+      ),
+      child: Icon(modifier.icon, size: 14, color: modifier.remove ? Colors.redAccent : Colors.white70),
+    );
+  }
+}
+
+class _AllOrdersChip extends StatelessWidget {
+  final int count;
+
+  const _AllOrdersChip({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+      decoration: BoxDecoration(
+        color: const Color(0xFF06131C),
+        border: Border.all(color: Colors.lightBlueAccent, width: 1.8),
+        borderRadius: BorderRadius.circular(13),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('ALL ORDERS', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900)),
+          const SizedBox(width: 12),
+          Text('$count', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoryChip extends StatelessWidget {
+  final String label;
+  final int count;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _CategoryChip({required this.label, required this.count, required this.icon, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 9),
+      child: Material(
+        color: selected ? Colors.white.withOpacity(.12) : const Color(0xFF0A171F),
+        borderRadius: BorderRadius.circular(13),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(13),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 21),
+                const SizedBox(width: 8),
+                Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900)),
+                const SizedBox(width: 10),
+                Text('$count', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LegendItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _LegendItem(this.icon, this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 15, color: Colors.white70),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(fontSize: 10, color: Colors.white70, fontWeight: FontWeight.w700)),
+      ],
+    );
+  }
+}
+
+class _LegendStatus extends StatelessWidget {
+  final Color color;
+  final String label;
+
+  const _LegendStatus(this.color, this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(fontSize: 10, color: Colors.white70, fontWeight: FontWeight.w700)),
+      ],
+    );
+  }
+}

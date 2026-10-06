@@ -1,0 +1,13 @@
+{
+  "projects": {},
+  "targets": {
+    "tv-app-31ad5": {
+      "hosting": {
+        "admin": [
+          "final-fx-tv"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

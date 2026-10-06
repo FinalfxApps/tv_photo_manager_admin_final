@@ -1,0 +1,31 @@
+{
+  "flutter": {
+    "platforms": {
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "tv-app-31ad5",
+          "configurations": {
+            "web": "1:109556524082:web:cba020c891d9b87d91082b"
+          }
+        }
+      }
+    }
+  },
+  "hosting": [
+    {
+      "target": "admin",
+      "public": "build/web",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
+    }
+  ]
+}
