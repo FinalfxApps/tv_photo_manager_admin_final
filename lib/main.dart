@@ -497,18 +497,18 @@ Future<bool> confirmBox(
 }) async {
   return await showDialog<bool>(
         context: context,
-        builder: (_) => AlertDialog(
+        builder: (dialogContext) => AlertDialog(
           backgroundColor: C.card2,
           title: Text(title),
           content: Text(text),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.pop(dialogContext, false),
               child: const Text('Cancel'),
             ),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: C.red),
-              onPressed: () => Navigator.pop(context, true),
+              onPressed: () => Navigator.pop(dialogContext, true),
               child: Text(action),
             ),
           ],
@@ -570,14 +570,7 @@ class _AdminShellState extends State<AdminShell> {
   int index = 0;
   late final PageController pageController;
 
-  final pages = const [
-    DashboardScreen(),
-    MediaScreen(),
-    PlaylistsScreen(),
-    DevicesScreen(),
-    ScheduleScreen(),
-    SettingsScreen(),
-  ];
+  late final List<Widget> pages;
   final labels = const [
     'Dashboard',
     'Photos & Videos',
@@ -599,6 +592,14 @@ class _AdminShellState extends State<AdminShell> {
   void initState() {
     super.initState();
     pageController = PageController();
+    pages = <Widget>[
+      DashboardScreen(onNavigate: _selectPage),
+      const MediaScreen(),
+      const PlaylistsScreen(),
+      const DevicesScreen(),
+      const ScheduleScreen(),
+      const SettingsScreen(),
+    ];
   }
 
   @override
@@ -1022,402 +1023,141 @@ ButtonStyle outline({bool danger = false}) => OutlinedButton.styleFrom(
 // DASHBOARD
 // ============================================================================
 
-class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
-  @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
-}
+class DashboardScreen extends StatelessWidget {
+  const DashboardScreen({super.key, required this.onNavigate});
 
-class _DashboardScreenState extends State<DashboardScreen> {
-  bool refreshing = false;
+  final ValueChanged<int> onNavigate;
 
   @override
   Widget build(BuildContext context) {
-    if (MediaQuery.sizeOf(context).width < 760) {
-      return _buildMobileDashboard();
-    }
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(42, 34, 42, 34),
-      child: Column(
-        children: [
-          header(
-            'Dashboard',
-            'Control your digital screens from one workspace.',
-            OutlinedButton.icon(
-              onPressed: refreshing ? null : _refresh,
-              style: outline(),
-              icon: const Icon(Icons.refresh_rounded, size: 17),
-              label: const Text('Refresh'),
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 600;
+        return SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            compact ? 16 : 42,
+            compact ? 22 : 34,
+            compact ? 16 : 42,
+            compact ? 22 : 34,
           ),
-          const SizedBox(height: 30),
-          Row(
-            children: [
-              _stat(
-                'TOTAL MEDIA',
-                AppStatsService.media,
-                Icons.perm_media_outlined,
-                C.light,
-              ),
-              const SizedBox(width: 16),
-              _stat(
-                'PLAYLISTS',
-                AppStatsService.playlists,
-                Icons.playlist_play_rounded,
-                C.cyan,
-              ),
-              const SizedBox(width: 16),
-              _stat(
-                'TV DEVICES',
-                AppStatsService.tvs,
-                Icons.tv_outlined,
-                C.green,
-              ),
-              const SizedBox(width: 16),
-              _stat(
-                'SCHEDULED',
-                AppStatsService.schedules,
-                Icons.schedule_rounded,
-                C.amber,
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: cardPanel(
-                    title: 'Content overview',
-                    subtitle: 'Real-time counters from the Admin data model.',
-                    child: SizedBox(
-                      height: 235,
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1000),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  header(
+                    'Dashboard',
+                    'Manage the content shown on your restaurant TVs.',
+                    null,
+                  ),
+                  const SizedBox(height: 24),
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(compact ? 22 : 32),
+                    decoration: BoxDecoration(
+                      color: C.card,
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: C.border),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 58,
+                          height: 58,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(17),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF8E72FF), Color(0xFF5C3DF5)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.tv_rounded,
+                            size: 30,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 22),
+                        Text(
+                          'Welcome to FINAL FX TV Manager',
+                          style: TextStyle(
+                            fontSize: compact ? 22 : 28,
+                            fontWeight: FontWeight.w800,
+                            height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Use the menu to upload restaurant photos and videos, '
+                          'organize playlists, manage TV devices and set display schedules.',
+                          style: TextStyle(
+                            fontSize: compact ? 14 : 15,
+                            height: 1.65,
+                            color: Colors.white.withValues(alpha: .68),
+                          ),
+                        ),
+                        const SizedBox(height: 22),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
                           children: [
-                            const Icon(
-                              Icons.auto_awesome_rounded,
-                              size: 46,
-                              color: C.light,
+                            _dashboardGuide(
+                              icon: Icons.photo_library_outlined,
+                              label: 'Photos & Videos',
+                              onTap: () => onNavigate(1),
                             ),
-                            const SizedBox(height: 15),
-                            ValueListenableBuilder<int>(
-                              valueListenable: AppStatsService.media,
-                              builder: (_, total, __) => Text(
-                                '$total media files ready',
-                                style: const TextStyle(
-                                  fontSize: 19,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
+                            _dashboardGuide(
+                              icon: Icons.playlist_play_rounded,
+                              label: 'Playlists',
+                              onTap: () => onNavigate(2),
                             ),
-                            const SizedBox(height: 8),
-                            ValueListenableBuilder<int>(
-                              valueListenable: AppStatsService.images,
-                              builder: (_, images, __) =>
-                                  ValueListenableBuilder<int>(
-                                    valueListenable: AppStatsService.videos,
-                                    builder: (_, videos, __) => Text(
-                                      '$images images • $videos videos',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: Colors.white.withValues(
-                                          alpha: .40,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
+                            _dashboardGuide(
+                              icon: Icons.tv_outlined,
+                              label: 'TV Devices',
+                              onTap: () => onNavigate(3),
+                            ),
+                            _dashboardGuide(
+                              icon: Icons.calendar_month_rounded,
+                              label: 'Schedule',
+                              onTap: () => onNavigate(4),
                             ),
                           ],
                         ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: cardPanel(
-                    title: 'System status',
-                    subtitle: 'Current backend state.',
-                    child: Column(
-                      children: [
-                        _status('Firebase', 'Connected'),
-                        _status('Storage', 'Online'),
-                        ValueListenableBuilder<int>(
-                          valueListenable: AppStatsService.revision,
-                          builder: (_, value, __) =>
-                              _status('Sync revision', '$value'),
-                        ),
-                        _status('Playback', 'Local cache ready'),
                       ],
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          cardPanel(
-            title: 'Cost & performance protection',
-            subtitle:
-                'Unchanged media is not re-downloaded by the TV architecture.',
-            child: Row(
-              children: const [
-                _Feature(
-                  Icons.flash_on_rounded,
-                  'FAST UPLOAD',
-                  'Parallel media uploads',
-                ),
-                _Feature(
-                  Icons.cached_rounded,
-                  'CACHE FIRST',
-                  'Local metadata cache',
-                ),
-                _Feature(
-                  Icons.sync_rounded,
-                  'CHANGE ONLY',
-                  'Revision-driven sync',
-                ),
-                _Feature(
-                  Icons.movie_filter_outlined,
-                  'LAZY VIDEO',
-                  'Preview on demand',
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMobileDashboard() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          header(
-            'Dashboard',
-            'Control your digital screens from one workspace.',
-            IconButton(
-              tooltip: 'Refresh dashboard',
-              onPressed: refreshing ? null : _refresh,
-              icon: const Icon(Icons.refresh_rounded),
-            ),
-          ),
-          const SizedBox(height: 20),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.55,
-            children: <Widget>[
-              _mobileStat('TOTAL MEDIA', AppStatsService.media, Icons.perm_media_outlined, C.light),
-              _mobileStat('PLAYLISTS', AppStatsService.playlists, Icons.playlist_play_rounded, C.cyan),
-              _mobileStat('TV DEVICES', AppStatsService.tvs, Icons.tv_outlined, C.green),
-              _mobileStat('SCHEDULED', AppStatsService.schedules, Icons.schedule_rounded, C.amber),
-            ],
-          ),
-          const SizedBox(height: 16),
-          cardPanel(
-            title: 'Content overview',
-            subtitle: 'Real-time counters from the Admin data model.',
-            child: SizedBox(
-              height: 142,
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    const Icon(Icons.auto_awesome_rounded, size: 38, color: C.light),
-                    const SizedBox(height: 10),
-                    ValueListenableBuilder<int>(
-                      valueListenable: AppStatsService.media,
-                      builder: (_, total, __) => Text(
-                        '$total media files ready',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    ValueListenableBuilder<int>(
-                      valueListenable: AppStatsService.images,
-                      builder: (_, images, __) => ValueListenableBuilder<int>(
-                        valueListenable: AppStatsService.videos,
-                        builder: (_, videos, __) => Text(
-                          '$images images • $videos videos',
-                          style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: .55)),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                ],
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          cardPanel(
-            title: 'System status',
-            subtitle: 'Current backend state.',
-            child: Column(
-              children: <Widget>[
-                _status('Firebase', 'Connected'),
-                _status('Storage', 'Online'),
-                ValueListenableBuilder<int>(
-                  valueListenable: AppStatsService.revision,
-                  builder: (_, value, __) => _status('Sync revision', '$value'),
-                ),
-                _status('Playback', 'Local cache ready'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          cardPanel(
-            title: 'Cost & performance protection',
-            subtitle: 'Cache-first playback reduces repeat downloads.',
-            child: Column(
-              children: <Widget>[
-                _mobileFeature(Icons.flash_on_rounded, 'FAST UPLOAD', 'Parallel media uploads'),
-                const Divider(height: 20, color: C.border),
-                _mobileFeature(Icons.cached_rounded, 'CACHE FIRST', 'Local metadata cache'),
-                const Divider(height: 20, color: C.border),
-                _mobileFeature(Icons.sync_rounded, 'CHANGE ONLY', 'Revision-driven sync'),
-                const Divider(height: 20, color: C.border),
-                _mobileFeature(Icons.movie_filter_outlined, 'LAZY VIDEO', 'Preview on demand'),
-              ],
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
+}
 
-  Widget _mobileStat(String title, ValueNotifier<int> notifier, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: C.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: C.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Icon(icon, size: 18, color: color),
-          const SizedBox(height: 8),
-          ValueListenableBuilder<int>(
-            valueListenable: notifier,
-            builder: (_, value, __) => Text(
-              '$value',
-              style: const TextStyle(fontSize: 27, fontWeight: FontWeight.w800),
-            ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 9, letterSpacing: .6, fontWeight: FontWeight.bold,
-                color: Colors.white.withValues(alpha: .58)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _mobileFeature(IconData icon, String title, String subtitle) {
-    return Row(
-      children: <Widget>[
-        Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(color: C.primary.withValues(alpha: .13),
-              borderRadius: BorderRadius.circular(11)),
-          child: Icon(icon, size: 18, color: C.light),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 3),
-              Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: .55))),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _stat(String title, ValueNotifier<int> n, IconData icon, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: C.card,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: C.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 18, color: color),
-            const SizedBox(height: 18),
-            ValueListenableBuilder<int>(
-              valueListenable: n,
-              builder: (_, v, __) => Text(
-                '$v',
-                style: const TextStyle(
-                  fontSize: 31,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 10,
-                letterSpacing: 1.1,
-                fontWeight: FontWeight.bold,
-                color: Colors.white.withValues(alpha: .34),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _status(String a, String b) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 10),
-    child: Row(
-      children: [
-        const _Dot(),
-        const SizedBox(width: 12),
-        Expanded(child: Text(a)),
-        Text(
-          b,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.white.withValues(alpha: .40),
-          ),
-        ),
-      ],
+Widget _dashboardGuide({
+  required IconData icon,
+  required String label,
+  required VoidCallback onTap,
+}) {
+  return OutlinedButton.icon(
+    onPressed: onTap,
+    icon: Icon(icon, size: 18, color: C.light),
+    label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+    style: OutlinedButton.styleFrom(
+      foregroundColor: Colors.white,
+      backgroundColor: C.card2,
+      side: BorderSide(color: C.primary.withValues(alpha: .48)),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      minimumSize: const Size(48, 46),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
     ),
   );
-
-  Future<void> _refresh() async {
-    setState(() => refreshing = true);
-    await AppStatsService.ensureInitialized();
-    if (mounted) setState(() => refreshing = false);
-  }
 }
 
 class _Feature extends StatelessWidget {
@@ -1690,35 +1430,79 @@ class _MediaScreenState extends State<MediaScreen> {
       text: item.name,
       action: 'Delete',
     );
-    if (!yes) return;
+    if (!yes || !mounted) return;
 
+    // First delete the gallery metadata. Keep the card if this operation fails.
     try {
-      await FirebaseStorage.instance.ref(item.path).delete();
-    } catch (_) {}
-    await Paths.media.doc(item.id).delete();
+      await Paths.media.doc(item.id).delete();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Delete failed: $e')),
+        );
+      }
+      return;
+    }
+
+    // The record is gone, so remove the card immediately.
     items.removeWhere((e) => e.id == item.id);
     for (int i = 0; i < items.length; i++) {
       items[i].order = i;
     }
-    final reorderOps = <void Function(WriteBatch)>[];
-    for (final current in items) {
-      reorderOps.add((batch) {
-        batch.update(Paths.media.doc(current.id), {'order': current.order});
-      });
-    }
-    await commitBatches(reorderOps);
-    await Paths.sync.set({
-      'revision': FieldValue.increment(1),
-      'reason': 'media-delete',
-      'totalMedia': items.length,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-    await AppStatsService.change(
-      mediaDelta: -1,
-      imageDelta: item.video ? 0 : -1,
-      videoDelta: item.video ? -1 : 0,
-    );
     if (mounted) setState(() {});
+
+    var storageFailed = item.path.trim().isEmpty;
+    if (!storageFailed) {
+      try {
+        await FirebaseStorage.instance.ref(item.path).delete();
+      } catch (_) {
+        storageFailed = true;
+      }
+    }
+
+    // Reordering, sync, and counters are secondary and must not undo the UI delete.
+    try {
+      final ops = <void Function(WriteBatch)>[];
+      for (final current in items) {
+        ops.add((batch) {
+          batch.update(Paths.media.doc(current.id), {'order': current.order});
+        });
+      }
+      await commitBatches(ops);
+    } catch (_) {}
+
+    try {
+      await Paths.sync.set({
+        'revision': FieldValue.increment(1),
+        'reason': 'media-delete',
+        'totalMedia': items.length,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (_) {}
+
+    try {
+      await AppStatsService.change(
+        mediaDelta: -1,
+        imageDelta: item.video ? 0 : -1,
+        videoDelta: item.video ? -1 : 0,
+      );
+    } catch (_) {
+      AppStatsService.media.value = items.length;
+      AppStatsService.images.value = items.where((e) => !e.video).length;
+      AppStatsService.videos.value = items.where((e) => e.video).length;
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            storageFailed
+                ? 'Removed from gallery, but the stored file could not be deleted. Check Firebase Storage rules.'
+                : 'Media deleted successfully.',
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> deleteAll() async {

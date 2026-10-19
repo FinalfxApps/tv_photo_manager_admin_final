@@ -547,7 +547,7 @@ class _FxRestaurantStudioScreenState extends State<FxRestaurantStudioScreen>
                     return Column(
                       children: <Widget>[
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(18, 18, 16, 20),
+                          padding: EdgeInsets.fromLTRB(compact ? 0 : 18, 18, compact ? 0 : 16, 20),
                           child: Row(
                             mainAxisAlignment: compact
                                 ? MainAxisAlignment.center
@@ -3362,88 +3362,303 @@ class _FxRemoteState extends State<_FxRemote> {
   @override
   Widget build(BuildContext context) {
     final list = groupMode ? groups : tvs;
+    final compact = MediaQuery.sizeOf(context).width < 600;
+
+    Widget commandButton(String command, IconData icon, Color color) {
+      return FilledButton.icon(
+        onPressed: target.isEmpty ? null : () => _send(command),
+        icon: Icon(icon, size: 19),
+        label: Text(command),
+        style: FilledButton.styleFrom(
+          backgroundColor: color,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: FxMasterC.card2,
+          disabledForegroundColor: Colors.white38,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          minimumSize: const Size(0, 46),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
+    }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(compact ? 16 : 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           const Text(
             'TV Remote',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+            style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 6),
+          Text(
+            'Choose a group or one TV, then send a command.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: .70),
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 18),
           SegmentedButton<bool>(
+            showSelectedIcon: true,
             segments: const <ButtonSegment<bool>>[
-              ButtonSegment<bool>(value: true, label: Text('Group')),
-              ButtonSegment<bool>(value: false, label: Text('TV')),
+              ButtonSegment<bool>(
+                value: true,
+                icon: Icon(Icons.groups_rounded),
+                label: Text('Group'),
+              ),
+              ButtonSegment<bool>(
+                value: false,
+                icon: Icon(Icons.tv_rounded),
+                label: Text('Single TV'),
+              ),
             ],
             selected: <bool>{groupMode},
             onSelectionChanged: (selection) {
-              groupMode = selection.first;
-              target = '';
+              setState(() {
+                groupMode = selection.first;
+                target = '';
+              });
               _load();
             },
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-                  dropdownColor: FxMasterC.card2,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-            value: target.isEmpty ? null : target,
-            items: list
-                .map(
-                  (doc) => DropdownMenuItem<String>(
-                    value: doc.id,
-                    child: Text(doc.data()['name']?.toString() ?? doc.id),
-                  ),
-                )
-                .toList(),
-            onChanged: (value) {
-              setState(() => target = value ?? '');
-            },
-            decoration: const InputDecoration(labelText: 'Target'),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            decoration: const InputDecoration(labelText: 'Command note'),
-            onChanged: (value) => note = value,
+            style: ButtonStyle(
+              foregroundColor: WidgetStateProperty.resolveWith<Color>(
+                (states) => states.contains(WidgetState.selected)
+                    ? Colors.white
+                    : const Color(0xFFE2E8F0),
+              ),
+              backgroundColor: WidgetStateProperty.resolveWith<Color>(
+                (states) => states.contains(WidgetState.selected)
+                    ? FxMasterC.primary
+                    : const Color(0xFF1A202B),
+              ),
+              side: WidgetStateProperty.resolveWith<BorderSide>(
+                (states) => BorderSide(
+                  color: states.contains(WidgetState.selected)
+                      ? const Color(0xFF9D8BFF)
+                      : const Color(0xFF424B5B),
+                  width: 1.1,
+                ),
+              ),
+              textStyle: WidgetStateProperty.all(
+                const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              ),
+              padding: WidgetStateProperty.all(
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              ),
+            ),
           ),
           const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children:
-                <String>[
-                      'Play',
-                      'Pause',
-                      'Previous',
-                      'Next',
-                      'Refresh',
-                      'Mute',
-                      'Unmute',
-                      'Restart',
-                    ]
-                    .map(
-                      (command) => FilledButton.tonal(
-                        onPressed: () => _send(command),
-                        child: Text(command),
+          if (list.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A202B),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFF424B5B)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  const Icon(Icons.info_outline_rounded,
+                      color: Color(0xFFFFC857), size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      groupMode
+                          ? 'No TV groups found. Add a group in TV Groups first.'
+                          : 'No TV devices found. Pair a TV in TV Photo Manager → TV Devices first.',
+                      style: const TextStyle(
+                        color: Color(0xFFE2E8F0),
+                        height: 1.4,
                       ),
-                    )
-                    .toList(),
-          ),
-          const SizedBox(height: 20),
-          _panel(
-            'Emergency Display',
-            Wrap(
-              spacing: 8,
-              children: <Widget>[
-                FilledButton(
-                  onPressed: () => _emergency(true),
-                  child: const Text('Emergency ON'),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            DropdownButtonFormField<String>(
+              initialValue: target.isEmpty ? null : target,
+              isExpanded: true,
+              dropdownColor: const Color(0xFF1A202B),
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              icon: const Icon(Icons.expand_more_rounded,
+                  color: Color(0xFFD6CCFF)),
+              items: list
+                  .map(
+                    (doc) => DropdownMenuItem<String>(
+                      value: doc.id,
+                      child: Text(
+                        doc.data()['name']?.toString() ?? doc.id,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) => setState(() => target = value ?? ''),
+              decoration: InputDecoration(
+                labelText: groupMode ? 'Select TV group' : 'Select TV device',
+                labelStyle: const TextStyle(color: Color(0xFFD6D9E2)),
+                prefixIcon: Icon(
+                  groupMode ? Icons.groups_rounded : Icons.tv_rounded,
+                  color: const Color(0xFF9D8BFF),
                 ),
-                OutlinedButton(
-                  onPressed: () => _emergency(false),
-                  child: const Text('Emergency OFF'),
+                filled: true,
+                fillColor: const Color(0xFF141923),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 16,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(13),
+                  borderSide: const BorderSide(color: Color(0xFF424B5B)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(13),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF9D8BFF), width: 1.5,
+                  ),
+                ),
+              ),
+            ),
+          if (list.isNotEmpty && target.isEmpty) ...<Widget>[
+            const SizedBox(height: 8),
+            const Row(
+              children: <Widget>[
+                Icon(Icons.touch_app_rounded,
+                    size: 16, color: Color(0xFFFFC857)),
+                SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Select a target to enable the command buttons.',
+                    style: TextStyle(color: Color(0xFFFFD889), fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 14),
+          TextField(
+            style: const TextStyle(color: Colors.white),
+            onChanged: (value) => note = value,
+            decoration: InputDecoration(
+              labelText: 'Command note (optional)',
+              hintText: 'Example: Update the dinner menu',
+              labelStyle: const TextStyle(color: Color(0xFFD6D9E2)),
+              hintStyle: const TextStyle(color: Color(0xFF969FB0)),
+              prefixIcon: const Icon(Icons.edit_note_rounded,
+                  color: Color(0xFF9D8BFF)),
+              filled: true,
+              fillColor: const Color(0xFF141923),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(13),
+                borderSide: const BorderSide(color: Color(0xFF424B5B)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(13),
+                borderSide: const BorderSide(
+                  color: Color(0xFF9D8BFF), width: 1.5,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _panel(
+            'Playback controls',
+            Wrap(
+              spacing: 9,
+              runSpacing: 9,
+              children: <Widget>[
+                commandButton('Play', Icons.play_arrow_rounded,
+                    const Color(0xFF16865F)),
+                commandButton('Pause', Icons.pause_rounded,
+                    const Color(0xFFB7791F)),
+                commandButton('Previous', Icons.skip_previous_rounded,
+                    const Color(0xFF2369A8)),
+                commandButton('Next', Icons.skip_next_rounded,
+                    const Color(0xFF2369A8)),
+                commandButton('Refresh', Icons.refresh_rounded,
+                    const Color(0xFF6546DE)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          _panel(
+            'Sound & device',
+            Wrap(
+              spacing: 9,
+              runSpacing: 9,
+              children: <Widget>[
+                commandButton('Mute', Icons.volume_off_rounded,
+                    const Color(0xFF56647A)),
+                commandButton('Unmute', Icons.volume_up_rounded,
+                    const Color(0xFF087F8C)),
+                commandButton('Restart', Icons.restart_alt_rounded,
+                    const Color(0xFFB93845)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          _panel(
+            'Emergency display',
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'Use only when you need to show an urgent message on the display.',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: .70),
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 9,
+                  runSpacing: 9,
+                  children: <Widget>[
+                    FilledButton.icon(
+                      onPressed: () => _emergency(true),
+                      icon: const Icon(Icons.warning_amber_rounded),
+                      label: const Text('Emergency ON'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFB93845),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => _emergency(false),
+                      icon: const Icon(Icons.check_circle_outline_rounded),
+                      label: const Text('Emergency OFF'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF7EE7B5),
+                        side: const BorderSide(
+                          color: Color(0xFF36C98A), width: 1.2,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -3452,6 +3667,7 @@ class _FxRemoteState extends State<_FxRemote> {
       ),
     );
   }
+
 }
 
 class _FxQr extends StatefulWidget {
@@ -3562,8 +3778,132 @@ class _FxRoles extends StatelessWidget {
   }
 }
 
-class _FxAudit extends StatelessWidget {
+class _FxAudit extends StatefulWidget {
   const _FxAudit();
+
+  @override
+  State<_FxAudit> createState() => _FxAuditState();
+}
+
+class _FxAuditState extends State<_FxAudit> {
+  final TextEditingController _searchController = TextEditingController();
+  String _actionFilter = 'all';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  String _prettyAction(String rawAction, String rawTarget) {
+    final action = rawAction.trim().toLowerCase();
+    final target = rawTarget.trim().toLowerCase();
+    if (action == 'select' && target == 'display_template') return 'Template selected';
+    if (action == 'use_template' && target == 'display_template') return 'Template applied';
+    if (action == 'emergency_off') return 'Emergency display turned off';
+    if (action == 'emergency_on') return 'Emergency display turned on';
+
+    const labels = <String, String>{
+      'create': 'Created',
+      'update': 'Updated',
+      'delete': 'Deleted',
+      'select': 'Selected',
+      'use_template': 'Applied template',
+      'login': 'Signed in',
+      'logout': 'Signed out',
+    };
+    if (labels.containsKey(action)) return labels[action]!;
+    final readable = action.replaceAll('_', ' ').trim();
+    if (readable.isEmpty) return 'Activity recorded';
+    return readable[0].toUpperCase() + readable.substring(1);
+  }
+
+  String _prettyTarget(String rawTarget) {
+    const labels = <String, String>{
+      'display_template': 'Display template',
+      'category': 'Menu category',
+      'menu_item': 'Menu item',
+      'offer': 'Special offer',
+      'tv_group': 'TV group',
+      'tv_device': 'TV device',
+      'device': 'TV device',
+      'remote': 'Remote control',
+      'qr_config': 'QR menu settings',
+      'role': 'Access role',
+      'emergency': 'Emergency control',
+    };
+    final key = rawTarget.trim().toLowerCase();
+    if (labels.containsKey(key)) return labels[key]!;
+    final readable = key.replaceAll('_', ' ').trim();
+    if (readable.isEmpty) return 'Workspace';
+    return readable[0].toUpperCase() + readable.substring(1);
+  }
+
+  String _cleanSummary(String raw) {
+    final value = raw.trim();
+    if (value.isEmpty) return 'No additional details';
+    final match = RegExp(r'^(.*?)\s*\(([^()]*)\)$').firstMatch(value);
+    if (match != null) {
+      final base = (match.group(1) ?? '').trim();
+      final suffix = (match.group(2) ?? '').trim().replaceAll('_', ' ');
+      if (base.isNotEmpty && base.toLowerCase() == suffix.toLowerCase()) {
+        return base;
+      }
+    }
+    return value;
+  }
+
+  DateTime? _readDate(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    return null;
+  }
+
+  String _dateLabel(dynamic value) {
+    final date = _readDate(value);
+    if (date == null) return 'Date not recorded';
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
+    final minute = date.minute.toString().padLeft(2, '0');
+    final suffix = date.hour >= 12 ? 'PM' : 'AM';
+    return '$day/$month/${date.year} • $hour:$minute $suffix';
+  }
+
+  IconData _actionIcon(String action) {
+    switch (action.trim().toLowerCase()) {
+      case 'create':
+        return Icons.add_circle_outline_rounded;
+      case 'update':
+        return Icons.edit_note_rounded;
+      case 'delete':
+        return Icons.delete_outline_rounded;
+      case 'select':
+      case 'use_template':
+        return Icons.dashboard_customize_rounded;
+      case 'emergency_off':
+      case 'emergency_on':
+        return Icons.health_and_safety_outlined;
+      default:
+        return Icons.history_rounded;
+    }
+  }
+
+  Color _actionColor(String action) {
+    switch (action.trim().toLowerCase()) {
+      case 'create':
+        return const Color(0xFF36C98A);
+      case 'update':
+      case 'select':
+      case 'use_template':
+        return const Color(0xFF9B83FF);
+      case 'delete':
+      case 'emergency_off':
+        return const Color(0xFFFF8585);
+      default:
+        return const Color(0xFF65C7F7);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -3573,24 +3913,254 @@ class _FxAudit extends StatelessWidget {
           .limit(200)
           .snapshots(),
       builder: (context, snapshot) {
-        final docs =
-            snapshot.data?.docs ??
-            const <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+        if (snapshot.hasError) {
+          return _auditMessage(
+            icon: Icons.error_outline_rounded,
+            title: 'Activity history is unavailable',
+            message: 'Check the connection or audit-log permissions, then try again.',
+          );
+        }
+        if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-        return ListView.separated(
-          padding: const EdgeInsets.all(24),
-          itemCount: docs.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
-          itemBuilder: (context, index) {
-            final data = docs[index].data();
-            return _fxDataCard(
-              '${data['action'] ?? ''} • ${data['target'] ?? ''}',
-              '${data['summary'] ?? ''} • ${data['email'] ?? ''}',
-              const SizedBox.shrink(),
+        final docs = snapshot.data?.docs ??
+            const <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+        final query = _searchController.text.trim().toLowerCase();
+        final filtered = docs.where((doc) {
+          final data = doc.data();
+          final action = data['action']?.toString() ?? '';
+          final target = data['target']?.toString() ?? '';
+          final summary = data['summary']?.toString() ?? '';
+          final email = data['email']?.toString() ?? '';
+          final matchesFilter = _actionFilter == 'all' ||
+              action.trim().toLowerCase() == _actionFilter;
+          final searchable = '$action $target $summary $email'.toLowerCase();
+          return matchesFilter && (query.isEmpty || searchable.contains(query));
+        }).toList();
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 620;
+            final horizontalPadding = compact ? 14.0 : 24.0;
+            final search = TextField(
+              controller: _searchController,
+              onChanged: (_) => setState(() {}),
+              style: const TextStyle(fontSize: 14, color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Search activity, user or item…',
+                prefixIcon: const Icon(Icons.search_rounded, size: 19),
+                suffixIcon: _searchController.text.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'Clear search',
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {});
+                        },
+                        icon: const Icon(Icons.close_rounded, size: 18),
+                      ),
+                filled: true,
+                fillColor: FxMasterC.card,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: FxMasterC.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: FxMasterC.border),
+                ),
+              ),
+            );
+            final filter = Container(
+              height: 48,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: FxMasterC.card,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: FxMasterC.border),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _actionFilter,
+                  isExpanded: true,
+                  dropdownColor: FxMasterC.card2,
+                  iconEnabledColor: Colors.white70,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  items: const <DropdownMenuItem<String>>[
+                    DropdownMenuItem(value: 'all', child: Text('All activities')),
+                    DropdownMenuItem(value: 'create', child: Text('Created')),
+                    DropdownMenuItem(value: 'update', child: Text('Updated')),
+                    DropdownMenuItem(value: 'delete', child: Text('Deleted')),
+                    DropdownMenuItem(value: 'select', child: Text('Template selected')),
+                    DropdownMenuItem(value: 'use_template', child: Text('Template applied')),
+                    DropdownMenuItem(value: 'emergency_off', child: Text('Emergency actions')),
+                    DropdownMenuItem(value: 'emergency_on', child: Text('Emergency actions (on)')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) setState(() => _actionFilter = value);
+                  },
+                ),
+              ),
+            );
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Padding(
+                  padding: EdgeInsets.fromLTRB(horizontalPadding, 20, horizontalPadding, 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Row(
+                        children: <Widget>[
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text('Activity history', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
+                                SizedBox(height: 4),
+                                Text('A clear record of changes in this workspace.', style: TextStyle(fontSize: 12, color: Colors.white60)),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                            decoration: BoxDecoration(
+                              color: FxMasterC.primary.withValues(alpha: .14),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: FxMasterC.primary.withValues(alpha: .26)),
+                            ),
+                            child: Text('${filtered.length} records', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      if (compact) ...<Widget>[
+                        search,
+                        const SizedBox(height: 10),
+                        filter,
+                      ] else
+                        Row(
+                          children: <Widget>[
+                            Expanded(child: search),
+                            const SizedBox(width: 12),
+                            SizedBox(width: 210, child: filter),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: filtered.isEmpty
+                      ? _auditMessage(
+                          icon: Icons.manage_search_rounded,
+                          title: query.isEmpty && _actionFilter == 'all' ? 'No activity yet' : 'No matching activity',
+                          message: query.isEmpty && _actionFilter == 'all'
+                              ? 'Changes to templates, categories, menu items and settings will appear here.'
+                              : 'Try another search term or choose All activities.',
+                        )
+                      : ListView.separated(
+                          padding: EdgeInsets.fromLTRB(horizontalPadding, 0, horizontalPadding, 24),
+                          itemCount: filtered.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          itemBuilder: (context, index) {
+                            final data = filtered[index].data();
+                            final action = data['action']?.toString() ?? '';
+                            final target = data['target']?.toString() ?? '';
+                            final summary = _cleanSummary(data['summary']?.toString() ?? '');
+                            final email = data['email']?.toString().trim() ?? '';
+                            final color = _actionColor(action);
+                            return Container(
+                              padding: EdgeInsets.all(compact ? 14 : 16),
+                              decoration: BoxDecoration(
+                                color: FxMasterC.card,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: FxMasterC.border),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Container(
+                                    width: 42,
+                                    height: 42,
+                                    decoration: BoxDecoration(
+                                      color: color.withValues(alpha: .13),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(_actionIcon(action), color: color, size: 21),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: <Widget>[
+                                        Text(
+                                          summary == 'No additional details' ? _prettyAction(action, target) : summary,
+                                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 5),
+                                        Wrap(
+                                          spacing: 7,
+                                          runSpacing: 5,
+                                          crossAxisAlignment: WrapCrossAlignment.center,
+                                          children: <Widget>[
+                                            Text(_prettyAction(action, target), style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600)),
+                                            const Text('·', style: TextStyle(color: Colors.white38)),
+                                            Text(_prettyTarget(target), style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 9),
+                                        Wrap(
+                                          spacing: 12,
+                                          runSpacing: 5,
+                                          children: <Widget>[
+                                            Text(
+                                              email.isEmpty ? 'User not recorded' : email,
+                                              style: const TextStyle(fontSize: 11, color: Colors.white54),
+                                            ),
+                                            Text(_dateLabel(data['createdAt']), style: const TextStyle(fontSize: 11, color: Colors.white54)),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
             );
           },
         );
       },
+    );
+  }
+
+  Widget _auditMessage({required IconData icon, required String title, required String message}) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(icon, size: 34, color: Colors.white38),
+              const SizedBox(height: 12),
+              Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 6),
+              Text(message, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: Colors.white60, height: 1.5)),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
