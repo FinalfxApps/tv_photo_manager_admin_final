@@ -23,11 +23,130 @@ Future<void> main() async {
   runApp(
     const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: FxRestaurantStudioScreen(),
+      home: FxWorkspaceSwitcher(),
     ),
   );
   unawaited(AppStatsService.ensureInitialized());
   unawaited(SyncService.start());
+}
+
+
+/// Top-level switcher keeps the Restaurant Studio and the original TV Photo
+/// Manager available from one app. The two existing workspaces remain intact.
+class FxWorkspaceSwitcher extends StatefulWidget {
+  const FxWorkspaceSwitcher({super.key});
+
+  @override
+  State<FxWorkspaceSwitcher> createState() => _FxWorkspaceSwitcherState();
+}
+
+class _FxWorkspaceSwitcherState extends State<FxWorkspaceSwitcher> {
+  bool _showTvPhotoManager = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 560;
+        return Scaffold(
+          backgroundColor: C.bg,
+          body: Column(
+            children: <Widget>[
+              Container(
+                height: 56,
+                padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 14),
+                decoration: const BoxDecoration(
+                  color: C.card2,
+                  border: Border(bottom: BorderSide(color: C.border)),
+                ),
+                child: Row(
+                  children: <Widget>[
+                    const Icon(Icons.grid_view_rounded, color: C.light, size: 19),
+                    SizedBox(width: compact ? 6 : 9),
+                    Text(
+                      compact ? 'FINAL FX' : 'FINAL FX WORKSPACES',
+                      style: TextStyle(
+                        fontSize: compact ? 10 : 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: compact ? .5 : 1.1,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    const Spacer(),
+                    _workspaceButton(
+                      label: compact ? 'Studio' : 'Restaurant Studio',
+                      icon: Icons.storefront_rounded,
+                      tvManager: false,
+                      compact: compact,
+                    ),
+                    SizedBox(width: compact ? 5 : 8),
+                    _workspaceButton(
+                      label: compact ? 'TV Photos' : 'TV Photo Manager',
+                      icon: Icons.photo_library_rounded,
+                      tvManager: true,
+                      compact: compact,
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: _showTvPhotoManager
+                    ? const TVPhotoManagerApp()
+                    : const FxRestaurantStudioScreen(),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _workspaceButton({
+    required String label,
+    required IconData icon,
+    required bool tvManager,
+    required bool compact,
+  }) {
+    final selected = _showTvPhotoManager == tvManager;
+    return Material(
+      color: selected ? C.primary.withValues(alpha: .18) : Colors.transparent,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => setState(() => _showTvPhotoManager = tvManager),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 7 : 12,
+            vertical: 8,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: selected ? C.primary.withValues(alpha: .48) : C.border,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(icon, size: compact ? 13 : 15,
+                  color: selected ? C.light : Colors.white60),
+              SizedBox(width: compact ? 4 : 7),
+              Text(
+                label,
+                maxLines: 1,
+                softWrap: false,
+                style: TextStyle(
+                  fontSize: compact ? 9 : 11,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                  color: selected ? Colors.white : Colors.white70,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class C {
@@ -485,13 +604,29 @@ class _AdminShellState extends State<AdminShell> {
   @override
   void dispose() {
     pageController.dispose();
-    // SyncService has no dispose method
     super.dispose();
+  }
+
+  void _selectPage(int page) {
+    setState(() => index = page);
+    if (pageController.hasClients) {
+      pageController.animateToPage(
+        page,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final viewportWidth = MediaQuery.sizeOf(context).width;
+    if (viewportWidth < 760) {
+      return _buildMobileShell(viewportWidth);
+    }
+
     return Scaffold(
+      backgroundColor: C.bg,
       body: Row(
         children: [
           Container(
@@ -546,100 +681,9 @@ class _AdminShellState extends State<AdminShell> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  ...List.generate(labels.length, (i) {
-                    final selected = i == index;
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 3,
-                      ),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(14),
-                        onTap: () {
-                          setState(() => index = i);
-                          pageController.animateToPage(
-                            i,
-                            duration: const Duration(milliseconds: 220),
-                            curve: Curves.easeOutCubic,
-                          );
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 160),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 13,
-                          ),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(14),
-                            color: selected
-                                ? C.primary.withValues(alpha: .18)
-                                : null,
-                            border: selected
-                                ? Border.all(
-                                    color: C.light.withValues(alpha: .20),
-                                  )
-                                : null,
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                icons[i],
-                                size: 20,
-                                color: selected
-                                    ? C.light
-                                    : Colors.white.withValues(alpha: .44),
-                              ),
-                              const SizedBox(width: 14),
-                              Text(
-                                labels[i],
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: selected
-                                      ? FontWeight.w700
-                                      : FontWeight.w500,
-                                  color: selected
-                                      ? Colors.white
-                                      : Colors.white.withValues(alpha: .58),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
+                  ...List.generate(labels.length, (i) => _desktopNavItem(i)),
                   const Spacer(),
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: ValueListenableBuilder<int>(
-                      valueListenable: AppStatsService.revision,
-                      builder: (_, value, __) => Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: C.card,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: C.border),
-                        ),
-                        child: Row(
-                          children: [
-                            const _Dot(),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'SYSTEM ONLINE\nRevision $value',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  height: 1.6,
-                                  color: Colors.white.withValues(alpha: .52),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                  _revisionFooter(compact: false),
                 ],
               ),
             ),
@@ -655,6 +699,231 @@ class _AdminShellState extends State<AdminShell> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMobileShell(double viewportWidth) {
+    return Scaffold(
+      backgroundColor: C.bg,
+      appBar: AppBar(
+        backgroundColor: C.card2,
+        elevation: 0,
+        titleSpacing: 0,
+        title: const Text(
+          'TV Photo Manager',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+        ),
+        leading: Builder(
+          builder: (buttonContext) => IconButton(
+            tooltip: 'Open navigation menu',
+            icon: const Icon(Icons.menu_rounded),
+            onPressed: () => Scaffold.of(buttonContext).openDrawer(),
+          ),
+        ),
+      ),
+      drawer: Drawer(
+        width: min(320.0, viewportWidth * .86),
+        backgroundColor: C.side,
+        child: SafeArea(
+          child: Column(
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 18, 14, 18),
+                child: Row(
+                  children: <Widget>[
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(13),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF8E72FF), Color(0xFF5C3DF5)],
+                        ),
+                      ),
+                      child: const Icon(Icons.tv_rounded, color: Colors.white),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'TV PHOTO MANAGER',
+                        maxLines: 2,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: .6,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 4, 18, 10),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'WORKSPACE',
+                    style: TextStyle(
+                      fontSize: 10,
+                      letterSpacing: 1.5,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white.withValues(alpha: .40),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  itemCount: labels.length,
+                  itemBuilder: (drawerContext, i) => _mobileNavItem(drawerContext, i),
+                ),
+              ),
+              _revisionFooter(compact: true),
+            ],
+          ),
+        ),
+      ),
+      body: SafeArea(
+        top: false,
+        child: PageView(
+          controller: pageController,
+          physics: const NeverScrollableScrollPhysics(),
+          onPageChanged: (value) {
+            if (mounted) setState(() => index = value);
+          },
+          children: pages,
+        ),
+      ),
+    );
+  }
+
+  Widget _desktopNavItem(int i) {
+    final selected = i == index;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+      child: Material(
+        color: selected ? C.primary.withValues(alpha: .18) : Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => _selectPage(i),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: selected
+                  ? Border.all(color: C.light.withValues(alpha: .20))
+                  : null,
+            ),
+            child: Row(
+              children: <Widget>[
+                Icon(icons[i], size: 20,
+                    color: selected ? C.light : Colors.white.withValues(alpha: .44)),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    labels[i],
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      color: selected ? Colors.white : Colors.white.withValues(alpha: .58),
+                    ),
+                  ),
+                ),
+                if (selected)
+                  Container(
+                    width: 5,
+                    height: 5,
+                    decoration: const BoxDecoration(color: C.light, shape: BoxShape.circle),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _mobileNavItem(BuildContext drawerContext, int i) {
+    final selected = i == index;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 5),
+      child: Material(
+        color: selected ? C.primary.withValues(alpha: .20) : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            Navigator.of(drawerContext).pop();
+            _selectPage(i);
+          },
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 48),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: selected ? C.primary.withValues(alpha: .55) : Colors.transparent,
+              ),
+            ),
+            child: Row(
+              children: <Widget>[
+                Icon(icons[i], size: 20,
+                    color: selected ? C.light : Colors.white.withValues(alpha: .62)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    labels[i],
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      color: selected ? Colors.white : Colors.white.withValues(alpha: .78),
+                    ),
+                  ),
+                ),
+                if (selected) const Icon(Icons.check_rounded, color: C.light, size: 18),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _revisionFooter({required bool compact}) {
+    return Padding(
+      padding: EdgeInsets.all(compact ? 12 : 16),
+      child: ValueListenableBuilder<int>(
+        valueListenable: AppStatsService.revision,
+        builder: (_, value, __) => Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(compact ? 12 : 16),
+          decoration: BoxDecoration(
+            color: C.card,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: C.border),
+          ),
+          child: Row(
+            children: <Widget>[
+              const _Dot(),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'SYSTEM ONLINE\nRevision $value',
+                  style: TextStyle(
+                    fontSize: 11,
+                    height: 1.6,
+                    color: Colors.white.withValues(alpha: .60),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -764,6 +1033,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (MediaQuery.sizeOf(context).width < 760) {
+      return _buildMobileDashboard();
+    }
     return Padding(
       padding: const EdgeInsets.fromLTRB(42, 34, 42, 34),
       child: Column(
@@ -918,6 +1190,168 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMobileDashboard() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          header(
+            'Dashboard',
+            'Control your digital screens from one workspace.',
+            IconButton(
+              tooltip: 'Refresh dashboard',
+              onPressed: refreshing ? null : _refresh,
+              icon: const Icon(Icons.refresh_rounded),
+            ),
+          ),
+          const SizedBox(height: 20),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.55,
+            children: <Widget>[
+              _mobileStat('TOTAL MEDIA', AppStatsService.media, Icons.perm_media_outlined, C.light),
+              _mobileStat('PLAYLISTS', AppStatsService.playlists, Icons.playlist_play_rounded, C.cyan),
+              _mobileStat('TV DEVICES', AppStatsService.tvs, Icons.tv_outlined, C.green),
+              _mobileStat('SCHEDULED', AppStatsService.schedules, Icons.schedule_rounded, C.amber),
+            ],
+          ),
+          const SizedBox(height: 16),
+          cardPanel(
+            title: 'Content overview',
+            subtitle: 'Real-time counters from the Admin data model.',
+            child: SizedBox(
+              height: 142,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    const Icon(Icons.auto_awesome_rounded, size: 38, color: C.light),
+                    const SizedBox(height: 10),
+                    ValueListenableBuilder<int>(
+                      valueListenable: AppStatsService.media,
+                      builder: (_, total, __) => Text(
+                        '$total media files ready',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    ValueListenableBuilder<int>(
+                      valueListenable: AppStatsService.images,
+                      builder: (_, images, __) => ValueListenableBuilder<int>(
+                        valueListenable: AppStatsService.videos,
+                        builder: (_, videos, __) => Text(
+                          '$images images • $videos videos',
+                          style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: .55)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          cardPanel(
+            title: 'System status',
+            subtitle: 'Current backend state.',
+            child: Column(
+              children: <Widget>[
+                _status('Firebase', 'Connected'),
+                _status('Storage', 'Online'),
+                ValueListenableBuilder<int>(
+                  valueListenable: AppStatsService.revision,
+                  builder: (_, value, __) => _status('Sync revision', '$value'),
+                ),
+                _status('Playback', 'Local cache ready'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          cardPanel(
+            title: 'Cost & performance protection',
+            subtitle: 'Cache-first playback reduces repeat downloads.',
+            child: Column(
+              children: <Widget>[
+                _mobileFeature(Icons.flash_on_rounded, 'FAST UPLOAD', 'Parallel media uploads'),
+                const Divider(height: 20, color: C.border),
+                _mobileFeature(Icons.cached_rounded, 'CACHE FIRST', 'Local metadata cache'),
+                const Divider(height: 20, color: C.border),
+                _mobileFeature(Icons.sync_rounded, 'CHANGE ONLY', 'Revision-driven sync'),
+                const Divider(height: 20, color: C.border),
+                _mobileFeature(Icons.movie_filter_outlined, 'LAZY VIDEO', 'Preview on demand'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _mobileStat(String title, ValueNotifier<int> notifier, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: C.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: C.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Icon(icon, size: 18, color: color),
+          const SizedBox(height: 8),
+          ValueListenableBuilder<int>(
+            valueListenable: notifier,
+            builder: (_, value, __) => Text(
+              '$value',
+              style: const TextStyle(fontSize: 27, fontWeight: FontWeight.w800),
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 9, letterSpacing: .6, fontWeight: FontWeight.bold,
+                color: Colors.white.withValues(alpha: .58)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _mobileFeature(IconData icon, String title, String subtitle) {
+    return Row(
+      children: <Widget>[
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(color: C.primary.withValues(alpha: .13),
+              borderRadius: BorderRadius.circular(11)),
+          child: Icon(icon, size: 18, color: C.light),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 3),
+              Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: .55))),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -1493,41 +1927,86 @@ class _MediaScreenState extends State<MediaScreen> {
   @override
   Widget build(BuildContext context) {
     final list = visible;
+    final compact = MediaQuery.sizeOf(context).width < 760;
+    final actionButtons = <Widget>[
+      OutlinedButton.icon(
+        onPressed: load,
+        style: outline(),
+        icon: const Icon(Icons.refresh_rounded, size: 17),
+        label: const Text('Refresh'),
+      ),
+      OutlinedButton.icon(
+        onPressed: items.isEmpty || deletingAll ? null : deleteAll,
+        style: outline(danger: true),
+        icon: const Icon(Icons.delete_sweep_rounded, size: 17),
+        label: Text(deletingAll ? 'Deleting...' : 'Delete All'),
+      ),
+      FilledButton.icon(
+        onPressed: uploading ? null : upload,
+        style: FilledButton.styleFrom(backgroundColor: C.primary),
+        icon: const Icon(Icons.cloud_upload_rounded, size: 18),
+        label: Text(uploading ? 'Uploading...' : 'Upload Media'),
+      ),
+    ];
+    final searchField = SizedBox(
+      width: compact ? double.infinity : 250,
+      height: 40,
+      child: TextField(
+        onChanged: (v) => setState(() => search = v),
+        style: const TextStyle(fontSize: 12),
+        decoration: const InputDecoration(
+          prefixIcon: Icon(Icons.search_rounded, size: 18),
+          hintText: 'Search media...',
+          contentPadding: EdgeInsets.zero,
+        ),
+      ),
+    );
     return Padding(
-      padding: const EdgeInsets.fromLTRB(42, 34, 42, 26),
+      padding: EdgeInsets.fromLTRB(compact ? 16 : 42, compact ? 18 : 34,
+          compact ? 16 : 42, compact ? 18 : 26),
       child: Column(
-        children: [
-          header(
-            'Photos & Videos',
-            'Manage every file displayed on your TVs.',
-            Row(
-              children: [
-                OutlinedButton.icon(
-                  onPressed: load,
-                  style: outline(),
-                  icon: const Icon(Icons.refresh_rounded, size: 17),
-                  label: const Text('Refresh'),
-                ),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          if (compact) ...<Widget>[
+            header('Photos & Videos', 'Manage every file displayed on your TVs.', null),
+            const SizedBox(height: 12),
+            Wrap(spacing: 8, runSpacing: 8, children: actionButtons),
+          ] else
+            header(
+              'Photos & Videos',
+              'Manage every file displayed on your TVs.',
+              Row(children: <Widget>[
+                actionButtons[0],
                 const SizedBox(width: 9),
-                OutlinedButton.icon(
-                  onPressed: items.isEmpty || deletingAll ? null : deleteAll,
-                  style: outline(danger: true),
-                  icon: const Icon(Icons.delete_sweep_rounded, size: 17),
-                  label: Text(deletingAll ? 'Deleting...' : 'Delete All'),
-                ),
+                actionButtons[1],
                 const SizedBox(width: 9),
-                FilledButton.icon(
-                  onPressed: uploading ? null : upload,
-                  style: FilledButton.styleFrom(backgroundColor: C.primary),
-                  icon: const Icon(Icons.cloud_upload_rounded, size: 18),
-                  label: Text(uploading ? 'Uploading...' : 'Upload Media'),
+                actionButtons[2],
+              ]),
+            ),
+          SizedBox(height: compact ? 16 : 24),
+          if (compact) ...<Widget>[
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: <Widget>[
+                _filter('All'),
+                _filter('Images'),
+                _filter('Videos'),
+                ValueListenableBuilder<int>(
+                  valueListenable: AppStatsService.images,
+                  builder: (_, v, __) => _tiny('Images $v'),
+                ),
+                ValueListenableBuilder<int>(
+                  valueListenable: AppStatsService.videos,
+                  builder: (_, v, __) => _tiny('Videos $v'),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
+            const SizedBox(height: 12),
+            searchField,
+          ] else
+            Row(children: <Widget>[
               _filter('All'),
               const SizedBox(width: 8),
               _filter('Images'),
@@ -1544,41 +2023,24 @@ class _MediaScreenState extends State<MediaScreen> {
                 builder: (_, v, __) => _tiny('Videos $v'),
               ),
               const Spacer(),
-              SizedBox(
-                width: 250,
-                height: 40,
-                child: TextField(
-                  onChanged: (v) => setState(() => search = v),
-                  style: const TextStyle(fontSize: 12),
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.search_rounded, size: 18),
-                    hintText: 'Search media...',
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ),
-            ],
-          ),
+              searchField,
+            ]),
           const SizedBox(height: 16),
           Row(
-            children: [
-              const Text(
-                'All Content',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
+            children: <Widget>[
+              const Text('All Content', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
               const SizedBox(width: 8),
               ValueListenableBuilder<int>(
                 valueListenable: AppStatsService.media,
                 builder: (_, v, __) => countBadge(v),
               ),
-              const Spacer(),
-              Text(
-                'Drag cards to change playback order',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.white.withValues(alpha: .27),
+              if (!compact) ...<Widget>[
+                const Spacer(),
+                Text(
+                  'Drag cards to change playback order',
+                  style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: .45)),
                 ),
-              ),
+              ],
             ],
           ),
           const SizedBox(height: 14),
@@ -2096,32 +2558,38 @@ class _PlaylistsScreenState extends State<PlaylistsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 760;
+    final refreshButton = OutlinedButton.icon(
+      onPressed: load,
+      style: outline(),
+      icon: const Icon(Icons.refresh_rounded, size: 17),
+      label: const Text('Refresh'),
+    );
+    final addButton = FilledButton.icon(
+      onPressed: () => unawaited(edit()),
+      style: FilledButton.styleFrom(backgroundColor: C.primary),
+      icon: const Icon(Icons.add_rounded),
+      label: const Text('Create Playlist'),
+    );
     return Padding(
-      padding: const EdgeInsets.fromLTRB(42, 34, 42, 34),
+      padding: EdgeInsets.fromLTRB(compact ? 16 : 42, compact ? 20 : 34,
+          compact ? 16 : 42, compact ? 16 : 34),
       child: Column(
-        children: [
-          header(
-            'Playlists',
-            'Build content sequences and assign them to TVs.',
-            Row(
-              children: [
-                OutlinedButton.icon(
-                  onPressed: load,
-                  style: outline(),
-                  icon: const Icon(Icons.refresh_rounded, size: 17),
-                  label: const Text('Refresh'),
-                ),
-                const SizedBox(width: 10),
-                FilledButton.icon(
-                  onPressed: () => unawaited(edit()),
-                  style: FilledButton.styleFrom(backgroundColor: C.primary),
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Create Playlist'),
-                ),
-              ],
+        children: <Widget>[
+          if (compact) ...<Widget>[
+            header('Playlists', 'Build content sequences and assign them to TVs.', null),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Wrap(spacing: 8, runSpacing: 8, children: <Widget>[refreshButton, addButton]),
             ),
-          ),
-          const SizedBox(height: 24),
+          ] else
+            header(
+              'Playlists',
+              'Build content sequences and assign them to TVs.',
+              Row(children: <Widget>[refreshButton, const SizedBox(width: 10), addButton]),
+            ),
+          SizedBox(height: compact ? 16 : 24),
           Expanded(
             child: loading
                 ? const Center(child: CircularProgressIndicator())
@@ -2403,32 +2871,38 @@ class _DevicesScreenState extends State<DevicesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 760;
+    final refreshButton = OutlinedButton.icon(
+      onPressed: load,
+      style: outline(),
+      icon: const Icon(Icons.refresh_rounded, size: 17),
+      label: const Text('Refresh'),
+    );
+    final addButton = FilledButton.icon(
+      onPressed: () => unawaited(edit()),
+      style: FilledButton.styleFrom(backgroundColor: C.primary),
+      icon: const Icon(Icons.add_rounded),
+      label: const Text('Add TV'),
+    );
     return Padding(
-      padding: const EdgeInsets.fromLTRB(42, 34, 42, 34),
+      padding: EdgeInsets.fromLTRB(compact ? 16 : 42, compact ? 20 : 34,
+          compact ? 16 : 42, compact ? 16 : 34),
       child: Column(
-        children: [
-          header(
-            'TV Devices',
-            'Pair screens, assign playlists and manage device state.',
-            Row(
-              children: [
-                OutlinedButton.icon(
-                  onPressed: load,
-                  style: outline(),
-                  icon: const Icon(Icons.refresh_rounded, size: 17),
-                  label: const Text('Refresh'),
-                ),
-                const SizedBox(width: 10),
-                FilledButton.icon(
-                  onPressed: () => unawaited(edit()),
-                  style: FilledButton.styleFrom(backgroundColor: C.primary),
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Add TV'),
-                ),
-              ],
+        children: <Widget>[
+          if (compact) ...<Widget>[
+            header('TV Devices', 'Pair screens, assign playlists and manage device state.', null),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Wrap(spacing: 8, runSpacing: 8, children: <Widget>[refreshButton, addButton]),
             ),
-          ),
-          const SizedBox(height: 24),
+          ] else
+            header(
+              'TV Devices',
+              'Pair screens, assign playlists and manage device state.',
+              Row(children: <Widget>[refreshButton, const SizedBox(width: 10), addButton]),
+            ),
+          SizedBox(height: compact ? 16 : 24),
           Expanded(
             child: loading
                 ? const Center(child: CircularProgressIndicator())
@@ -2893,32 +3367,38 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 760;
+    final refreshButton = OutlinedButton.icon(
+      onPressed: load,
+      style: outline(),
+      icon: const Icon(Icons.refresh_rounded, size: 17),
+      label: const Text('Refresh'),
+    );
+    final addButton = FilledButton.icon(
+      onPressed: playlists.isEmpty ? null : () => unawaited(edit()),
+      style: FilledButton.styleFrom(backgroundColor: C.primary),
+      icon: const Icon(Icons.add_rounded),
+      label: const Text('Create Schedule'),
+    );
     return Padding(
-      padding: const EdgeInsets.fromLTRB(42, 34, 42, 34),
+      padding: EdgeInsets.fromLTRB(compact ? 16 : 42, compact ? 20 : 34,
+          compact ? 16 : 42, compact ? 16 : 34),
       child: Column(
-        children: [
-          header(
-            'Schedule',
-            'Automate which playlist appears on which TV and when.',
-            Row(
-              children: [
-                OutlinedButton.icon(
-                  onPressed: load,
-                  style: outline(),
-                  icon: const Icon(Icons.refresh_rounded, size: 17),
-                  label: const Text('Refresh'),
-                ),
-                const SizedBox(width: 10),
-                FilledButton.icon(
-                  onPressed: playlists.isEmpty ? null : () => unawaited(edit()),
-                  style: FilledButton.styleFrom(backgroundColor: C.primary),
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Create Schedule'),
-                ),
-              ],
+        children: <Widget>[
+          if (compact) ...<Widget>[
+            header('Schedule', 'Automate which playlist appears on which TV and when.', null),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Wrap(spacing: 8, runSpacing: 8, children: <Widget>[refreshButton, addButton]),
             ),
-          ),
-          const SizedBox(height: 24),
+          ] else
+            header(
+              'Schedule',
+              'Automate which playlist appears on which TV and when.',
+              Row(children: <Widget>[refreshButton, const SizedBox(width: 10), addButton]),
+            ),
+          SizedBox(height: compact ? 16 : 24),
           Expanded(
             child: loading
                 ? const Center(child: CircularProgressIndicator())
@@ -3105,209 +3585,178 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     if (loading) return const Center(child: CircularProgressIndicator());
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(42, 34, 42, 42),
+    final compact = MediaQuery.sizeOf(context).width < 760;
+
+    final saveButton = FilledButton.icon(
+      onPressed: saving ? null : save,
+      style: FilledButton.styleFrom(backgroundColor: C.primary),
+      icon: const Icon(Icons.save_rounded),
+      label: Text(saving ? 'Saving...' : 'Save Settings'),
+    );
+
+    final workspaceCard = cardPanel(
+      title: 'Workspace',
+      subtitle: 'Branding used across the system.',
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          header(
-            'Settings',
-            'Manage workspace branding, playback defaults and cache behavior.',
-            FilledButton.icon(
-              onPressed: saving ? null : save,
-              style: FilledButton.styleFrom(backgroundColor: C.primary),
-              icon: const Icon(Icons.save_rounded),
-              label: Text(saving ? 'Saving...' : 'Save Settings'),
+        children: <Widget>[
+          TextField(controller: venue, decoration: const InputDecoration(labelText: 'Venue / Company name')),
+          const SizedBox(height: 14),
+          TextField(controller: logo, decoration: const InputDecoration(labelText: 'Logo URL (optional)')),
+        ],
+      ),
+    );
+
+    final playbackCard = cardPanel(
+      title: 'Playback defaults',
+      subtitle: 'Defaults the TV app can use.',
+      child: Column(
+        children: <Widget>[
+          DropdownButtonFormField<int>(
+            value: duration,
+            decoration: const InputDecoration(labelText: 'Default image duration'),
+            items: const [3, 5, 10, 15, 20, 30]
+                .map((v) => DropdownMenuItem(value: v, child: Text('$v seconds')))
+                .toList(),
+            onChanged: (v) { if (v != null) setState(() => duration = v); },
+          ),
+          const SizedBox(height: 14),
+          DropdownButtonFormField<String>(
+            value: transition,
+            decoration: const InputDecoration(labelText: 'Transition'),
+            items: const ['Fade', 'None', 'Slide']
+                .map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+            onChanged: (v) { if (v != null) setState(() => transition = v); },
+          ),
+          const SizedBox(height: 14),
+          DropdownButtonFormField<String>(
+            value: fit,
+            decoration: const InputDecoration(labelText: 'Fit mode'),
+            items: const ['Cover', 'Contain', 'Fill']
+                .map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+            onChanged: (v) { if (v != null) setState(() => fit = v); },
+          ),
+        ],
+      ),
+    );
+
+    final audioCard = cardPanel(
+      title: 'Audio & display',
+      subtitle: 'Default TV playback behavior.',
+      child: Column(
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Text('Default volume'),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Slider(
+                  value: volume, min: 0, max: 1, divisions: 10,
+                  label: '${(volume * 100).round()}%',
+                  onChanged: (v) => setState(() => volume = v),
+                ),
+              ),
+              Text('${(volume * 100).round()}%'),
+            ],
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: autoplay,
+            title: const Text('Autoplay videos'),
+            onChanged: (v) => setState(() => autoplay = v),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: clock,
+            title: const Text('Show clock overlay'),
+            onChanged: (v) => setState(() => clock = v),
+          ),
+        ],
+      ),
+    );
+
+    final syncCard = cardPanel(
+      title: 'Sync & cache',
+      subtitle: 'Cost-control policy for TV synchronization.',
+      child: Column(
+        children: <Widget>[
+          DropdownButtonFormField<String>(
+            value: cache,
+            decoration: const InputDecoration(labelText: 'Cache policy'),
+            items: const ['Cache first', 'Balanced', 'Always refresh']
+                .map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+            onChanged: (v) { if (v != null) setState(() => cache = v); },
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: C.green.withValues(alpha: .06),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: C.green.withValues(alpha: .12)),
+            ),
+            child: const Row(
+              children: <Widget>[
+                Icon(Icons.shield_outlined, color: C.green),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'TVs use revision-based synchronization and should keep unchanged media locally.',
+                    style: TextStyle(fontSize: 12, height: 1.4),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 24),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: cardPanel(
-                  title: 'Workspace',
-                  subtitle: 'Branding used across the system.',
-                  child: Column(
-                    children: [
-                      TextField(
-                        controller: venue,
-                        decoration: const InputDecoration(
-                          labelText: 'Venue / Company name',
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      TextField(
-                        controller: logo,
-                        decoration: const InputDecoration(
-                          labelText: 'Logo URL (optional)',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: cardPanel(
-                  title: 'Playback defaults',
-                  subtitle: 'Defaults the TV app can use.',
-                  child: Column(
-                    children: [
-                      DropdownButtonFormField<int>(
-                        value: duration,
-                        decoration: const InputDecoration(
-                          labelText: 'Default image duration',
-                        ),
-                        items: const [3, 5, 10, 15, 20, 30]
-                            .map(
-                              (v) => DropdownMenuItem(
-                                value: v,
-                                child: Text('$v seconds'),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (v) {
-                          if (v != null) setState(() => duration = v);
-                        },
-                      ),
-                      const SizedBox(height: 14),
-                      DropdownButtonFormField<String>(
-                        value: transition,
-                        decoration: const InputDecoration(
-                          labelText: 'Transition',
-                        ),
-                        items: const ['Fade', 'None', 'Slide']
-                            .map(
-                              (v) => DropdownMenuItem(value: v, child: Text(v)),
-                            )
-                            .toList(),
-                        onChanged: (v) {
-                          if (v != null) setState(() => transition = v);
-                        },
-                      ),
-                      const SizedBox(height: 14),
-                      DropdownButtonFormField<String>(
-                        value: fit,
-                        decoration: const InputDecoration(
-                          labelText: 'Fit mode',
-                        ),
-                        items: const ['Cover', 'Contain', 'Fill']
-                            .map(
-                              (v) => DropdownMenuItem(value: v, child: Text(v)),
-                            )
-                            .toList(),
-                        onChanged: (v) {
-                          if (v != null) setState(() => fit = v);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+        ],
+      ),
+    );
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(compact ? 16 : 42, compact ? 20 : 34,
+          compact ? 16 : 42, compact ? 24 : 42),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          if (compact) ...<Widget>[
+            header('Settings', 'Manage workspace branding, playback defaults and cache behavior.', null),
+            const SizedBox(height: 10),
+            Align(alignment: Alignment.centerLeft, child: saveButton),
+          ] else
+            header('Settings', 'Manage workspace branding, playback defaults and cache behavior.', saveButton),
           const SizedBox(height: 20),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: cardPanel(
-                  title: 'Audio & display',
-                  subtitle: 'Default TV playback behavior.',
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          const Text('Default volume'),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Slider(
-                              value: volume,
-                              min: 0,
-                              max: 1,
-                              divisions: 10,
-                              label: '${(volume * 100).round()}%',
-                              onChanged: (v) => setState(() => volume = v),
-                            ),
-                          ),
-                          Text('${(volume * 100).round()}%'),
-                        ],
-                      ),
-                      SwitchListTile(
-                        value: autoplay,
-                        title: const Text('Autoplay videos'),
-                        onChanged: (v) => setState(() => autoplay = v),
-                      ),
-                      SwitchListTile(
-                        value: clock,
-                        title: const Text('Show clock overlay'),
-                        onChanged: (v) => setState(() => clock = v),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: cardPanel(
-                  title: 'Sync & cache',
-                  subtitle: 'Cost-control policy for TV synchronization.',
-                  child: Column(
-                    children: [
-                      DropdownButtonFormField<String>(
-                        value: cache,
-                        decoration: const InputDecoration(
-                          labelText: 'Cache policy',
-                        ),
-                        items:
-                            const ['Cache first', 'Balanced', 'Always refresh']
-                                .map(
-                                  (v) => DropdownMenuItem(
-                                    value: v,
-                                    child: Text(v),
-                                  ),
-                                )
-                                .toList(),
-                        onChanged: (v) {
-                          if (v != null) setState(() => cache = v);
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: C.green.withValues(alpha: .06),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: C.green.withValues(alpha: .12),
-                          ),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.shield_outlined, color: C.green),
-                            SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'TVs use revision-based synchronization and should keep unchanged media locally.',
-                                style: TextStyle(fontSize: 12, height: 1.4),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+          if (compact) ...<Widget>[
+            workspaceCard,
+            const SizedBox(height: 16),
+            playbackCard,
+            const SizedBox(height: 16),
+            audioCard,
+            const SizedBox(height: 16),
+            syncCard,
+          ] else ...<Widget>[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Expanded(child: workspaceCard),
+                const SizedBox(width: 20),
+                Expanded(child: playbackCard),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Expanded(child: audioCard),
+                const SizedBox(width: 20),
+                Expanded(child: syncCard),
+              ],
+            ),
+          ],
           const SizedBox(height: 20),
           cardPanel(
             title: 'Data model',
             subtitle: 'Collections used by the Admin and TV apps.',
             child: Column(
-              children: const [
+              children: const <Widget>[
                 _Info('Media', 'tv_media'),
                 _Info('Playlists', 'playlists'),
                 _Info('TV Devices', 'tv_devices'),

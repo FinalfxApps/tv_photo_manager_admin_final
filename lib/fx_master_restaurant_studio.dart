@@ -30,6 +30,7 @@ class FxMasterC {
   static const card2 = Color(0xFF151923);
   static const border = Color(0x18FFFFFF);
   static const primary = Color(0xFF7656F8);
+  static const light = Color(0xFFA996FF);
   static const red = Color(0xFFE05252);
   static const green = Color(0xFF36C98A);
   static const gold = Color(0xFFD8B45A);
@@ -439,13 +440,66 @@ class _FxRestaurantStudioScreenState extends State<FxRestaurantStudioScreen>
       data: Theme.of(context).copyWith(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: FxMasterC.bg,
+        canvasColor: FxMasterC.card2,
+        popupMenuTheme: PopupMenuThemeData(
+          color: FxMasterC.card2,
+          textStyle: const TextStyle(color: Colors.white, fontSize: 13),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: FxMasterC.border),
+          ),
+        ),
         colorScheme: Theme.of(context).colorScheme.copyWith(
           brightness: Brightness.dark,
           primary: FxMasterC.primary,
           surface: FxMasterC.card,
         ),
         textTheme: Theme.of(context).textTheme
-            .apply(bodyColor: Colors.white, displayColor: Colors.white),
+            .apply(bodyColor: Colors.white, displayColor: Colors.white)
+            .copyWith(
+              bodyMedium: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.white.withValues(alpha: .90),
+                fontSize: 14,
+              ),
+              bodySmall: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.white70,
+                fontSize: 12,
+              ),
+              labelLarge: Theme.of(context).textTheme.labelLarge?.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            backgroundColor: FxMasterC.primary,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: const Color(0xFF272333),
+            disabledForegroundColor: Colors.white54,
+            textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+            minimumSize: const Size(0, 42),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.white,
+            disabledForegroundColor: Colors.white38,
+            textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+            minimumSize: const Size(0, 42),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            side: BorderSide(color: FxMasterC.primary.withValues(alpha: .55)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: FxMasterC.light,
+            textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: FxMasterC.card,
@@ -980,6 +1034,8 @@ class _FxCategoriesState extends State<_FxCategories> {
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
+                  dropdownColor: FxMasterC.card2,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
                         value: color,
                         decoration: const InputDecoration(
                           labelText: 'TV Highlight Color',
@@ -1254,6 +1310,8 @@ class _FxMenuState extends State<_FxMenu> {
                       ),
                       const SizedBox(height: 10),
                       DropdownButtonFormField<String>(
+                  dropdownColor: FxMasterC.card2,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
                         value: categoryId.isEmpty ? null : categoryId,
                         isExpanded: true,
                         decoration: const InputDecoration(
@@ -1345,6 +1403,8 @@ class _FxMenuState extends State<_FxMenu> {
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
+                  dropdownColor: FxMasterC.card2,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
                         value: mode,
                         decoration: const InputDecoration(
                           labelText: 'TV Display Mode',
@@ -1363,6 +1423,8 @@ class _FxMenuState extends State<_FxMenu> {
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
+                  dropdownColor: FxMasterC.card2,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
                         value: style,
                         decoration: const InputDecoration(
                           labelText: 'Name Style',
@@ -1381,6 +1443,8 @@ class _FxMenuState extends State<_FxMenu> {
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
+                  dropdownColor: FxMasterC.card2,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
                         value: color,
                         decoration: const InputDecoration(
                           labelText: 'Name Color',
@@ -1850,24 +1914,1346 @@ class _FxOffersState extends State<_FxOffers> {
   }
 }
 
-class _FxTemplates extends StatelessWidget {
+String _fxFriendlyPhotoName(String rawName, int index, {required String fallbackPrefix}) {
+  final value = rawName.trim();
+  final looksLikeFilename = RegExp(
+    r'\.(png|jpe?g|webp|gif|mp4|webm|mov|m4v)$',
+    caseSensitive: false,
+  ).hasMatch(value) ||
+      value.toLowerCase().startsWith('chatgpt image') ||
+      value.contains('/') ||
+      value.contains(r'\');
+  if (value.isEmpty || looksLikeFilename) {
+    return '$fallbackPrefix ${index + 1}';
+  }
+  return value;
+}
+
+class _FxTemplateFood {
+  const _FxTemplateFood({
+    required this.name,
+    required this.category,
+    required this.imageUrl,
+    required this.price,
+  });
+
+  final String name;
+  final String category;
+  final String imageUrl;
+  final double price;
+}
+
+class _FxTemplates extends StatefulWidget {
   const _FxTemplates();
 
   @override
+  State<_FxTemplates> createState() => _FxTemplatesState();
+}
+
+class _FxTemplatesState extends State<_FxTemplates> {
+  static const _presets = <String>[
+    'Classic Hero',
+    'Food Grid',
+    'Special Offer',
+    'Combo Deals',
+    'Category Showcase',
+    'New Arrival',
+    'Breakfast',
+    'Dessert',
+    'Drinks',
+    'Good Food • Good Mood',
+  ];
+
+  static const _layoutByPreset = <String, String>{
+    'Classic Hero': 'hero',
+    'Food Grid': 'grid',
+    'Special Offer': 'offer',
+    'Combo Deals': 'combo',
+    'Category Showcase': 'categories',
+    'New Arrival': 'new',
+    'Breakfast': 'breakfast',
+    'Dessert': 'dessert',
+    'Drinks': 'drinks',
+    'Good Food • Good Mood': 'brand',
+  };
+
+  List<_FxTemplateFood> _foods = const <_FxTemplateFood>[];
+  String? _offerImageUrl;
+  bool _loadingPhotos = true;
+  bool _savingSelection = false;
+  bool _addingTemplate = false;
+  String? _photoLoadMessage;
+  String? _selectedTemplateId;
+  String? _selectedTemplateName;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreviewPhotos();
+    _loadCurrentTemplate();
+  }
+
+  Future<void> _loadCurrentTemplate() async {
+    try {
+      final doc = await FxMasterDb.db
+          .collection('display_config')
+          .doc('current')
+          .get();
+      final data = doc.data() ?? <String, dynamic>{};
+      if (!mounted) return;
+      setState(() {
+        _selectedTemplateId = data['selectedTemplateId']?.toString();
+        _selectedTemplateName = data['selectedTemplateName']?.toString();
+      });
+    } catch (_) {
+      // The Templates page remains usable if read access to the optional
+      // active-template setting has not been granted yet.
+    }
+  }
+
+  Future<bool> _chooseTemplate({
+    required String templateId,
+    required String name,
+    required String layout,
+  }) async {
+    if (_savingSelection) return false;
+    if (_selectedTemplateId == templateId) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('"$name" is already the active default template.')),
+        );
+      }
+      return true;
+    }
+
+    setState(() => _savingSelection = true);
+    try {
+      // Persist a single shared default selection. The TV player can consume
+      // display_config/current to render this layout when player integration
+      // is enabled in the TV client.
+      await FxMasterDb.db.collection('display_config').doc('current').set(
+        <String, dynamic>{
+          'selectedTemplateId': templateId,
+          'selectedTemplateName': name,
+          'selectedTemplateLayout': layout,
+          'updatedAt': FieldValue.serverTimestamp(),
+          'updatedBy': FirebaseAuth.instance.currentUser?.uid ?? '',
+        },
+        SetOptions(merge: true),
+      );
+
+      await fxMasterAudit('select', 'display_template', '$name ($layout)');
+      if (!mounted) return false;
+      setState(() {
+        _selectedTemplateId = templateId;
+        _selectedTemplateName = name;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('"$name" saved as the active default template.')),
+      );
+      return true;
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Template selection could not be saved. Check Firestore write permissions and try again.',
+            ),
+          ),
+        );
+      }
+      return false;
+    } finally {
+      if (mounted) setState(() => _savingSelection = false);
+    }
+  }
+
+  Future<void> _addTemplate() async {
+    if (_addingTemplate) return;
+    final nameController = TextEditingController();
+    var selectedPreset = _presets.first;
+    String? validationMessage;
+    Map<String, String>? result;
+
+    try {
+      result = await showDialog<Map<String, String>>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (dialogContext, setDialogState) => AlertDialog(
+            backgroundColor: FxMasterC.card2,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Text('Add TV template'),
+            content: SizedBox(
+              width: 430,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    'Create a reusable layout preset. You can preview it and set it as the active default after saving.',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: .72),
+                      fontSize: 13,
+                      height: 1.45,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  TextField(
+                    controller: nameController,
+                    autofocus: true,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(
+                      labelText: 'Template name',
+                      hintText: 'e.g. Weekend Family Combo',
+                      prefixIcon: Icon(Icons.drive_file_rename_outline_rounded),
+                    ),
+                    onChanged: (_) {
+                      if (validationMessage != null) {
+                        setDialogState(() => validationMessage = null);
+                      }
+                    },
+                    onSubmitted: (_) {
+                      final value = nameController.text.trim();
+                      if (value.isEmpty) {
+                        setDialogState(() => validationMessage = 'Enter a template name.');
+                        return;
+                      }
+                      Navigator.pop(dialogContext, <String, String>{
+                        'name': value,
+                        'preset': selectedPreset,
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  DropdownButtonFormField<String>(
+                  dropdownColor: FxMasterC.card2,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                    initialValue: selectedPreset,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Starting layout',
+                      prefixIcon: Icon(Icons.dashboard_customize_rounded),
+                    ),
+                    items: _presets
+                        .map((preset) => DropdownMenuItem<String>(
+                              value: preset,
+                              child: Text(preset, overflow: TextOverflow.ellipsis),
+                            ))
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setDialogState(() => selectedPreset = value);
+                      }
+                    },
+                  ),
+                  if (validationMessage != null) ...<Widget>[
+                    const SizedBox(height: 10),
+                    Text(
+                      validationMessage!,
+                      style: const TextStyle(color: FxMasterC.red, fontSize: 12),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Cancel'),
+              ),
+              FilledButton.icon(
+                onPressed: () {
+                  final value = nameController.text.trim();
+                  if (value.isEmpty) {
+                    setDialogState(() => validationMessage = 'Enter a template name.');
+                    return;
+                  }
+                  Navigator.pop(dialogContext, <String, String>{
+                    'name': value,
+                    'preset': selectedPreset,
+                  });
+                },
+                icon: const Icon(Icons.add_rounded, size: 17),
+                label: const Text('Create template'),
+              ),
+            ],
+          ),
+        ),
+      );
+    } finally {
+      nameController.dispose();
+    }
+
+    if (result == null) return;
+    final name = (result['name'] ?? '').trim();
+    final preset = result['preset'] ?? _presets.first;
+    final layout = _layoutByPreset[preset] ?? 'hero';
+    if (name.isEmpty) return;
+
+    setState(() => _addingTemplate = true);
+    try {
+      await FxMasterDb.templates.add(<String, dynamic>{
+        'name': name,
+        'layout': layout,
+        'category': layout,
+        'type': layout,
+        'previewUrl': '',
+        'active': true,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'createdBy': FirebaseAuth.instance.currentUser?.uid ?? '',
+      });
+      await fxMasterAudit('create', 'display_template', '$name ($layout)');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Template "$name" created. You can now preview or select it.')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Template could not be created. Check Firestore write permissions and try again.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _addingTemplate = false);
+    }
+  }
+
+  // Load menu/offer images once on entering the Templates tab. We do not add
+  // another permanent Firestore listener, keeping reads lower and previews
+  // based on real images already uploaded by the restaurant.
+  Future<void> _loadPreviewPhotos() async {
+    if (mounted) {
+      setState(() {
+        _loadingPhotos = true;
+        _photoLoadMessage = null;
+      });
+    }
+
+    try {
+      final results = await Future.wait([
+        FxMasterDb.menu.limit(60).get(),
+        FxMasterDb.offers.limit(30).get(),
+        FxMasterDb.categories.limit(100).get(),
+      ]);
+      final menuSnapshot = results[0];
+      final offerSnapshot = results[1];
+      final categorySnapshot = results[2];
+
+      final categoryNamesById = <String, String>{};
+      for (final categoryDoc in categorySnapshot.docs) {
+        final categoryData = categoryDoc.data();
+        final nameEn = (categoryData['nameEn'] ?? '').toString().trim();
+        final nameAr = (categoryData['nameAr'] ?? '').toString().trim();
+        final readableName = nameEn.isNotEmpty ? nameEn : nameAr;
+        if (readableName.isNotEmpty) categoryNamesById[categoryDoc.id] = readableName;
+      }
+
+      final photos = <_FxTemplateFood>[];
+      for (final doc in menuSnapshot.docs) {
+        final data = doc.data();
+        final imageUrl = (data['photoUrl'] ??
+                data['imageUrl'] ??
+                data['thumbnailUrl'] ??
+                data['imageURL'] ??
+                data['image'] ??
+                data['pictureUrl'] ??
+                '')
+            .toString()
+            .trim();
+        if (imageUrl.isEmpty) continue;
+
+        final categoryId = (data['categoryId'] ?? '').toString().trim();
+        final rawCategory = (data['categoryName'] ?? data['category'] ?? '')
+            .toString()
+            .trim();
+        final category = categoryNamesById[categoryId] ??
+            categoryNamesById[rawCategory] ??
+            rawCategory;
+        final rawName = (data['nameEn'] ?? data['name'] ?? data['title'] ?? '')
+            .toString();
+        final priceValue = data['price'];
+        final price = priceValue is num ? priceValue.toDouble() : 0.0;
+        if (data['active'] == false) continue;
+
+        photos.add(_FxTemplateFood(
+          name: _fxFriendlyPhotoName(
+            rawName,
+            photos.length,
+            fallbackPrefix: 'Menu item',
+          ),
+          category: category,
+          imageUrl: imageUrl,
+          price: price,
+        ));
+      }
+
+      // Use the TV Photo Manager gallery as a fallback only for general
+      // layouts. Category-specific layouts never receive these photos.
+      if (photos.length < 3) {
+        try {
+          final mediaSnapshot = await FxMasterDb.db
+              .collection('tv_media')
+              .where('type', isEqualTo: 'image')
+              .limit(40)
+              .get();
+          final seenUrls = photos.map((photo) => photo.imageUrl).toSet();
+          for (final doc in mediaSnapshot.docs) {
+            if (photos.length >= 12) break;
+            final data = doc.data();
+            final url = (data['downloadUrl'] ?? data['photoUrl'] ?? data['imageUrl'] ?? '')
+                .toString()
+                .trim();
+            if (url.isEmpty || seenUrls.contains(url)) continue;
+            final rawName = (data['name'] ?? data['title'] ?? doc.id).toString();
+            photos.add(_FxTemplateFood(
+              name: _fxFriendlyPhotoName(rawName, photos.length, fallbackPrefix: 'Restaurant photo'),
+              category: 'Gallery',
+              imageUrl: url,
+              price: 0,
+            ));
+            seenUrls.add(url);
+          }
+        } catch (_) {}
+      }
+
+      String? offerPhoto;
+      for (final doc in offerSnapshot.docs) {
+        final data = doc.data();
+        final url = (data['imageUrl'] ?? data['photoUrl'] ?? '').toString().trim();
+        if (url.isNotEmpty && data['active'] != false) {
+          offerPhoto = url;
+          break;
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _foods = photos;
+        _offerImageUrl = offerPhoto;
+        _loadingPhotos = false;
+        _photoLoadMessage = photos.isEmpty
+            ? 'No real photos were found in Menu or the TV photo gallery. Upload food photos, then press Refresh photos.'
+            : null;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loadingPhotos = false;
+        _photoLoadMessage = 'Could not load menu photos. Check Firebase permissions/connection, then press Refresh photos.';
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return _simpleCollection(
-      'TV Templates',
-      FxMasterDb.templates,
-      Icons.dashboard_customize_rounded,
-      const <String>[
-        'Fullscreen Photo',
-        'Photo + Price',
-        'Menu Grid',
-        'Premium Restaurant',
-        'Split Screen',
-        'Offers Screen',
-        'Mixed Slideshow',
-      ],
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FxMasterDb.templates.snapshots(),
+      builder: (context, snapshot) {
+        final docs = snapshot.data?.docs ??
+            const <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+
+        return _fxMasterListPage(
+          'TV Templates',
+          'Preview a layout, then select it to save your active default template.',
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: <Widget>[
+              OutlinedButton.icon(
+                onPressed: _loadingPhotos ? null : _loadPreviewPhotos,
+                icon: _loadingPhotos
+                    ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.refresh_rounded, size: 17),
+                label: const Text('Refresh photos'),
+              ),
+              FilledButton.icon(
+                onPressed: _addingTemplate ? null : _addTemplate,
+                icon: _addingTemplate
+                    ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.add_rounded, size: 17),
+                label: Text(_addingTemplate ? 'Adding...' : 'Add template'),
+              ),
+            ],
+          ),
+          snapshot.hasError
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      'Templates could not be loaded. Check the Firebase connection and try again.\n${snapshot.error}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white60),
+                    ),
+                  ),
+                )
+              : snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData
+                  ? const Center(child: CircularProgressIndicator())
+                  : docs.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                const Icon(Icons.dashboard_customize_rounded, size: 44, color: FxMasterC.primary),
+                                const SizedBox(height: 12),
+                                const Text('No templates found yet', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+                                const SizedBox(height: 5),
+                                const Text('Use Add template to create your first layout preset.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white60)),
+                                const SizedBox(height: 16),
+                                FilledButton.icon(onPressed: _addTemplate, icon: const Icon(Icons.add_rounded), label: const Text('Add template')),
+                              ],
+                            ),
+                          ),
+                        )
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            final columns = constraints.maxWidth >= 1000 ? 2 : 1;
+                            final cellWidth = (constraints.maxWidth - (columns - 1) * 16) / columns;
+                            final tileHeight = cellWidth * 9 / 16 + 182;
+                            final aspectRatio = cellWidth / tileHeight;
+
+                            return Column(
+                              children: <Widget>[
+                                if (_photoLoadMessage != null)
+                                  Container(
+                                    width: double.infinity,
+                                    margin: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: FxMasterC.gold.withValues(alpha: .08),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: FxMasterC.gold.withValues(alpha: .25)),
+                                    ),
+                                    child: Row(
+                                      children: <Widget>[
+                                        const Icon(Icons.photo_library_outlined, color: FxMasterC.gold),
+                                        const SizedBox(width: 10),
+                                        Expanded(child: Text(_photoLoadMessage!, style: const TextStyle(color: Colors.white70, fontSize: 12))),
+                                      ],
+                                    ),
+                                  ),
+                                if (_selectedTemplateId != null)
+                                  Container(
+                                    width: double.infinity,
+                                    margin: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                                    decoration: BoxDecoration(
+                                      color: FxMasterC.green.withValues(alpha: .08),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: FxMasterC.green.withValues(alpha: .30)),
+                                    ),
+                                    child: Row(
+                                      children: <Widget>[
+                                        const Icon(Icons.check_circle_rounded, color: FxMasterC.green, size: 19),
+                                        const SizedBox(width: 9),
+                                        Expanded(
+                                          child: Text(
+                                            'Active default: ${_selectedTemplateName?.isNotEmpty == true ? _selectedTemplateName : _selectedTemplateId}',
+                                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white),
+                                          ),
+                                        ),
+                                        if (_savingSelection) const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                                      ],
+                                    ),
+                                  ),
+                                Expanded(
+                                  child: GridView.builder(
+                                    padding: const EdgeInsets.fromLTRB(24, 18, 24, 28),
+                                    itemCount: docs.length,
+                                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: columns,
+                                      crossAxisSpacing: 16,
+                                      mainAxisSpacing: 16,
+                                      childAspectRatio: aspectRatio,
+                                    ),
+                                    itemBuilder: (context, index) {
+                                      final doc = docs[index];
+                                      final data = doc.data();
+                                      final rawName = (data['name'] ?? data['title'] ?? doc.id).toString().trim();
+                                      final name = rawName.isEmpty ? doc.id : rawName;
+                                      final layout = (data['layout'] ?? data['category'] ?? data['type'] ?? 'template').toString();
+                                      final imageValue = data['previewUrl'] ?? data['thumbnailUrl'] ?? data['imageUrl'] ?? data['photoUrl'];
+                                      final imageUrl = imageValue?.toString().trim();
+                                      final templateImage = imageUrl == null || imageUrl.isEmpty ? null : imageUrl;
+                                      final selected = _selectedTemplateId == doc.id;
+
+                                      Future<bool> selectThis() => _chooseTemplate(
+                                            templateId: doc.id,
+                                            name: name,
+                                            layout: layout,
+                                          );
+
+                                      return _FxTemplateCard(
+                                        key: ValueKey<String>(doc.id),
+                                        name: name,
+                                        layout: layout,
+                                        imageUrl: templateImage,
+                                        foods: _foods,
+                                        offerImageUrl: _offerImageUrl,
+                                        selected: selected,
+                                        selecting: _savingSelection,
+                                        onSelect: selectThis,
+                                        onPreview: () => _showFxTemplatePreview(
+                                          context,
+                                          name: name,
+                                          layout: layout,
+                                          imageUrl: templateImage,
+                                          foods: _foods,
+                                          offerImageUrl: _offerImageUrl,
+                                          onSelect: selectThis,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+        );
+      },
+    );
+  }
+}
+
+class _FxTemplateCard extends StatelessWidget {
+  const _FxTemplateCard({
+    super.key,
+    required this.name,
+    required this.layout,
+    required this.imageUrl,
+    required this.foods,
+    required this.offerImageUrl,
+    required this.selected,
+    required this.selecting,
+    required this.onSelect,
+    required this.onPreview,
+  });
+
+  final String name;
+  final String layout;
+  final String? imageUrl;
+  final List<_FxTemplateFood> foods;
+  final String? offerImageUrl;
+  final bool selected;
+  final bool selecting;
+  final Future<bool> Function() onSelect;
+  final VoidCallback onPreview;
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = selected ? FxMasterC.green : FxMasterC.border;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: FxMasterC.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor, width: selected ? 1.5 : 1),
+        boxShadow: selected
+            ? <BoxShadow>[
+                BoxShadow(color: FxMasterC.green.withValues(alpha: .08), blurRadius: 16),
+              ]
+            : const <BoxShadow>[],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Expanded(
+            child: _FxTemplateArtwork(
+              name: name,
+              layout: layout,
+              imageUrl: imageUrl,
+              foods: foods,
+              offerImageUrl: offerImageUrl,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                ),
+              ),
+              if (selected) ...<Widget>[
+                const SizedBox(width: 6),
+                _fxStatusPill('ACTIVE', FxMasterC.green),
+              ],
+              const SizedBox(width: 7),
+              _fxPill(layout.isEmpty ? 'template' : layout),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onPreview,
+                  icon: const Icon(Icons.visibility_rounded, size: 16),
+                  label: const Text('Preview'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: BorderSide(color: FxMasterC.primary.withValues(alpha: .65)),
+                    minimumSize: const Size(0, 42),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                    textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: selecting
+                      ? null
+                      : () async {
+                          await onSelect();
+                        },
+                  icon: selecting
+                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : Icon(selected ? Icons.check_circle_rounded : Icons.done_all_rounded, size: 16),
+                  label: Text(selected ? 'Selected' : 'Use template', maxLines: 1, overflow: TextOverflow.ellipsis),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: selected ? FxMasterC.green : FxMasterC.primary,
+                    foregroundColor: selected ? const Color(0xFF07120C) : Colors.white,
+                    disabledBackgroundColor: selected ? FxMasterC.green.withValues(alpha: .35) : const Color(0xFF272333),
+                    disabledForegroundColor: selected ? const Color(0xFF07120C) : Colors.white54,
+                    minimumSize: const Size(0, 42),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                    textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Widget _fxStatusPill(String text, Color color) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: .12),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: color.withValues(alpha: .36)),
+    ),
+    child: Text(
+      text,
+      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: color),
+    ),
+  );
+}
+
+Future<void> _showFxTemplatePreview(
+  BuildContext context, {
+  required String name,
+  required String layout,
+  required String? imageUrl,
+  required List<_FxTemplateFood> foods,
+  required String? offerImageUrl,
+  required Future<bool> Function() onSelect,
+}) async {
+  await showDialog<void>(
+    context: context,
+    builder: (dialogContext) => Dialog(
+      backgroundColor: FxMasterC.card2,
+      insetPadding: const EdgeInsets.all(24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1000),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(name, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800)),
+                        const SizedBox(height: 4),
+                        Text('TV template preview • $layout',
+                            style: const TextStyle(color: Colors.white60)),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Close preview',
+                    onPressed: () => Navigator.pop(dialogContext),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 420,
+                child: _FxTemplateArtwork(
+                  name: name,
+                  layout: layout,
+                  imageUrl: imageUrl,
+                  foods: foods,
+                  offerImageUrl: offerImageUrl,
+                  expanded: true,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                alignment: WrapAlignment.end,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 10,
+                runSpacing: 10,
+                children: <Widget>[
+                  SizedBox(
+                    width: 560,
+                    child: const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Icon(Icons.tv_rounded, color: FxMasterC.primary, size: 19),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Category layouts show matching Menu items only. If a matching photo is missing, add it to Menu first.',
+                            style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  OutlinedButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: const Text('Close'),
+                  ),
+                  FilledButton.icon(
+                    onPressed: () async {
+                      final saved = await onSelect();
+                      if (saved && dialogContext.mounted) {
+                        Navigator.pop(dialogContext);
+                      }
+                    },
+                    icon: const Icon(Icons.check_circle_outline_rounded, size: 17),
+                    label: const Text('Use this template'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _FxTemplateArtwork extends StatelessWidget {
+  const _FxTemplateArtwork({
+    required this.name,
+    required this.layout,
+    required this.imageUrl,
+    required this.foods,
+    required this.offerImageUrl,
+    this.expanded = false,
+  });
+
+  final String name;
+  final String layout;
+  final String? imageUrl;
+  final List<_FxTemplateFood> foods;
+  final String? offerImageUrl;
+  final bool expanded;
+
+  List<_FxTemplateFood> _photosForTemplate(String key) {
+    if (foods.isEmpty) return const <_FxTemplateFood>[];
+    final normalized = key.toLowerCase();
+
+    // Category-specific templates must only show genuinely matching Menu
+    // items. Generic TV gallery images are intentionally excluded so a
+    // chicken image is not displayed in Dessert/Drinks, for example.
+    Set<String>? categoryHints;
+    if (normalized.contains('dessert')) {
+      categoryHints = <String>{
+        'dessert', 'sweet', 'cake', 'bakery', 'pastry', 'donut',
+        'doughnut', 'ice cream', 'pudding', 'fruit', 'حلويات', 'كعك', 'حلو',
+      };
+    } else if (normalized.contains('breakfast')) {
+      categoryHints = <String>{
+        'breakfast', 'brunch', 'morning', 'egg', 'pancake', 'waffle',
+        'bakery', 'فطور', 'إفطار',
+      };
+    } else if (normalized.contains('drink')) {
+      categoryHints = <String>{
+        'drink', 'beverage', 'juice', 'coffee', 'tea', 'water', 'soda',
+        'smoothie', 'مشروبات', 'عصير', 'قهوة', 'شاي',
+      };
+    }
+
+    if (categoryHints != null) {
+      final matched = foods.where((food) {
+        if (food.category.toLowerCase() == 'gallery') return false;
+        final searchText = '${food.category} ${food.name}'.toLowerCase();
+        return categoryHints!.any(searchText.contains);
+      }).toList();
+      return matched.take(3).toList();
+    }
+
+    // For general layouts, show actual menu items first. Use general TV
+    // gallery photos only to fill the remaining preview positions.
+    final menuPhotos = foods
+        .where((food) => food.category.toLowerCase() != 'gallery')
+        .toList();
+    if (menuPhotos.length >= 3) return menuPhotos.take(3).toList();
+    final result = <_FxTemplateFood>[...menuPhotos];
+    for (final photo in foods.where((food) => food.category.toLowerCase() == 'gallery')) {
+      if (result.length >= 3) break;
+      if (!result.any((existing) => existing.imageUrl == photo.imageUrl)) {
+        result.add(photo);
+      }
+    }
+    return result;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final key = '$name $layout'.toLowerCase();
+    final accent = key.contains('offer')
+        ? FxMasterC.red
+        : key.contains('drink')
+            ? const Color(0xFF34C7E8)
+            : key.contains('dessert') || key.contains('breakfast')
+                ? FxMasterC.gold
+                : FxMasterC.primary;
+    final isOffer = key.contains('offer');
+    final isGrid = key.contains('grid') || key.contains('combo') ||
+        key.contains('categor') || key.contains('drink') ||
+        key.contains('dessert') || key.contains('breakfast');
+    final isBrand = key.contains('brand') || key.contains('mood');
+    final photoFoods = _photosForTemplate(key);
+    final heroPhoto = photoFoods.isNotEmpty ? photoFoods.first.imageUrl : null;
+    // Do not reuse an unrelated menu/gallery picture as an offer banner.
+    // The card will show its upload placeholder until an Offer image exists.
+    final specialOfferPhoto =
+        (offerImageUrl?.isNotEmpty == true) ? offerImageUrl : null;
+    final fallbackNames = key.contains('drink')
+        ? const <String>['Cold Drinks', 'Hot Coffee', 'Fresh Juice']
+        : key.contains('dessert')
+            ? const <String>['Cheesecake', 'Donuts', 'Dessert']
+            : key.contains('breakfast')
+                ? const <String>['Eggs Meal', 'Pancakes', 'Bakery']
+                : const <String>['Menu Favourite', 'Chef Special', 'Best Seller'];
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: <Color>[
+              accent.withValues(alpha: .25),
+              const Color(0xFF090B12),
+              const Color(0xFF10131B),
+            ],
+          ),
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            if (imageUrl != null && imageUrl!.isNotEmpty)
+              Image.network(
+                imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: <Color>[
+                    const Color(0xFF07090E).withValues(alpha: .95),
+                    const Color(0xFF10131B).withValues(alpha: .74),
+                    accent.withValues(alpha: .32),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.all(expanded ? 28 : 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      Icon(Icons.restaurant_rounded,
+                          size: expanded ? 23 : 15, color: accent),
+                      const SizedBox(width: 7),
+                      Text(
+                        'FINAL FX',
+                        style: TextStyle(
+                          fontSize: expanded ? 15 : 10,
+                          letterSpacing: 2,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: expanded ? 12 : 7,
+                          vertical: expanded ? 7 : 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: accent.withValues(alpha: .18),
+                          borderRadius: BorderRadius.circular(7),
+                          border: Border.all(color: accent.withValues(alpha: .45)),
+                        ),
+                        child: Text(
+                          layout.toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: expanded ? 12 : 9,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: .7,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: expanded ? 22 : 10),
+                  Expanded(
+                    child: isOffer
+                        ? Row(
+                            children: <Widget>[
+                              Container(
+                                width: expanded ? 150 : 75,
+                                height: expanded ? 150 : 75,
+                                decoration: BoxDecoration(
+                                  color: accent,
+                                  shape: BoxShape.circle,
+                                  boxShadow: <BoxShadow>[
+                                    BoxShadow(color: accent.withValues(alpha: .28), blurRadius: 22),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '30%\nOFF',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: expanded ? 30 : 17,
+                                      height: 1.05,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: expanded ? 22 : 12),
+                              Expanded(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Text('LIMITED TIME', style: TextStyle(
+                                      color: accent, fontSize: expanded ? 14 : 9,
+                                      letterSpacing: 1.5, fontWeight: FontWeight.w900,
+                                    )),
+                                    SizedBox(height: expanded ? 9 : 4),
+                                    Text('SPECIAL OFFER', maxLines: 2, style: TextStyle(
+                                      fontSize: expanded ? 30 : 17, height: 1.0,
+                                      fontWeight: FontWeight.w900,
+                                    )),
+                                    SizedBox(height: expanded ? 10 : 4),
+                                    Text('Big flavour. Better value.', style: TextStyle(
+                                      color: Colors.white70, fontSize: expanded ? 16 : 9,
+                                    )),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(width: expanded ? 12 : 6),
+                              SizedBox(
+                                width: expanded ? 190 : 92,
+                                child: _FxTemplateFoodImage(
+                                  url: specialOfferPhoto,
+                                  accent: accent,
+                                  label: 'Offer photo',
+                                  expanded: expanded,
+                                ),
+                              ),
+                            ],
+                          )
+                        : isGrid
+                            ? Row(
+                                children: <Widget>[
+                                  for (var i = 0; i < 3; i++)
+                                    Expanded(
+                                      child: _FxTemplateMiniItem(
+                                        imageUrl: i < photoFoods.length ? photoFoods[i].imageUrl : null,
+                                        title: i < photoFoods.length && photoFoods[i].name.isNotEmpty
+                                            ? photoFoods[i].name
+                                            : fallbackNames[i],
+                                        subtitle: i >= photoFoods.length
+                                            ? 'ADD PHOTO IN MENU'
+                                            : photoFoods[i].category.toLowerCase() == 'gallery'
+                                                ? 'GALLERY PHOTO'
+                                                : photoFoods[i].price > 0
+                                                    ? 'SAR ${photoFoods[i].price.toStringAsFixed(0)}'
+                                                    : 'ADD PRICE IN MENU',
+                                        accent: accent,
+                                        expanded: expanded,
+                                      ),
+                                    ),
+                                ],
+                              )
+                            : Row(
+                                children: <Widget>[
+                                  Expanded(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: <Widget>[
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: expanded ? 12 : 7,
+                                            vertical: expanded ? 7 : 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: accent.withValues(alpha: .2),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            isBrand ? 'OUR PROMISE' : 'CHEF’S PICK',
+                                            style: TextStyle(
+                                              color: accent, fontSize: expanded ? 12 : 8,
+                                              fontWeight: FontWeight.w900, letterSpacing: 1,
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(height: expanded ? 14 : 7),
+                                        Text(
+                                          isBrand ? 'GOOD FOOD.\nGOOD MOOD.' : 'SIGNATURE\nFLAVOUR',
+                                          maxLines: 2,
+                                          style: TextStyle(
+                                            fontSize: expanded ? 39 : 20,
+                                            height: .98,
+                                            letterSpacing: -.4,
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                        ),
+                                        SizedBox(height: expanded ? 12 : 6),
+                                        Text('Made fresh. Served with love.',
+                                            maxLines: 1, overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(color: Colors.white70,
+                                                fontSize: expanded ? 16 : 9)),
+                                        SizedBox(height: expanded ? 14 : 7),
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: expanded ? 14 : 8,
+                                            vertical: expanded ? 9 : 5,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: accent,
+                                            borderRadius: BorderRadius.circular(7),
+                                          ),
+                                          child: Text('ORDER NOW  →', style: TextStyle(
+                                            fontSize: expanded ? 12 : 8,
+                                            fontWeight: FontWeight.w900,
+                                          )),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(width: expanded ? 22 : 8),
+                                  SizedBox(
+                                    width: expanded ? 220 : 112,
+                                    child: AspectRatio(
+                                      // Keep a real landscape menu image from
+                                      // being squeezed into a narrow vertical strip.
+                                      aspectRatio: 1,
+                                      child: _FxTemplateFoodImage(
+                                        url: heroPhoto,
+                                        accent: accent,
+                                        label: 'Menu food photo',
+                                        expanded: expanded,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FxTemplateMiniItem extends StatelessWidget {
+  const _FxTemplateMiniItem({
+    required this.imageUrl,
+    required this.title,
+    required this.subtitle,
+    required this.accent,
+    required this.expanded,
+  });
+
+  final String? imageUrl;
+  final String title;
+  final String subtitle;
+  final Color accent;
+  final bool expanded;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: expanded ? 7 : 3),
+      padding: EdgeInsets.all(expanded ? 12 : 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B0E15).withValues(alpha: .78),
+        borderRadius: BorderRadius.circular(expanded ? 14 : 8),
+        border: Border.all(color: Colors.white.withValues(alpha: .12)),
+      ),
+      child: Column(
+        children: <Widget>[
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(expanded ? 10 : 6),
+              child: _FxTemplateFoodImage(
+                url: imageUrl,
+                accent: accent,
+                label: 'Upload photo',
+                expanded: expanded,
+              ),
+            ),
+          ),
+          SizedBox(height: expanded ? 8 : 4),
+          Text(
+            title.toUpperCase(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: expanded ? 13 : 10, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: accent,
+              fontSize: expanded ? 11 : 8,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FxTemplateFoodImage extends StatelessWidget {
+  const _FxTemplateFoodImage({
+    required this.url,
+    required this.accent,
+    required this.label,
+    required this.expanded,
+  });
+
+  final String? url;
+  final Color accent;
+  final String label;
+  final bool expanded;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasUrl = url != null && url!.trim().isNotEmpty;
+    if (!hasUrl) {
+      return Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: const Color(0xFF0A0D13),
+          border: Border.all(color: accent.withValues(alpha: .25)),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(Icons.add_photo_alternate_outlined,
+                    color: accent.withValues(alpha: .8), size: expanded ? 34 : 20),
+                const SizedBox(height: 6),
+                Text(
+                  label.toUpperCase(),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white54,
+                    fontSize: expanded ? 10 : 7,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: .5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Image.network(
+      url!,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return Container(
+          color: const Color(0xFF0A0D13),
+          alignment: Alignment.center,
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              value: progress.expectedTotalBytes == null
+                  ? null
+                  : progress.cumulativeBytesLoaded / progress.expectedTotalBytes!,
+            ),
+          ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) => Container(
+        color: const Color(0xFF0A0D13),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(8),
+        child: Text(
+          'PHOTO UNAVAILABLE',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: accent, fontSize: expanded ? 10 : 7,
+              fontWeight: FontWeight.w800),
+        ),
+      ),
     );
   }
 }
@@ -2001,6 +3387,8 @@ class _FxRemoteState extends State<_FxRemote> {
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
+                  dropdownColor: FxMasterC.card2,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
             value: target.isEmpty ? null : target,
             items: list
                 .map(
@@ -2224,9 +3612,14 @@ Widget _simpleCollection(
         title,
         'Shared management collection.',
         FilledButton.icon(
-          onPressed: () => _showScaffoldInfo(context, title, choices),
+          onPressed: () => _addSimpleCollectionRecord(
+            context,
+            title: title,
+            collection: collection,
+            choices: choices,
+          ),
           icon: const Icon(Icons.add_rounded),
-          label: const Text('Add'),
+          label: Text(title == 'Roles' ? 'Add role record' : 'Add group'),
         ),
         ListView.separated(
           padding: const EdgeInsets.all(24),
@@ -2253,30 +3646,160 @@ Widget _simpleCollection(
   );
 }
 
-Future<void> _showScaffoldInfo(
-  BuildContext context,
-  String title,
-  List<String> choices,
-) async {
-  await showDialog<void>(
-    context: context,
-    builder: (dialogContext) {
-      return AlertDialog(
-        backgroundColor: FxMasterC.card2,
-        title: Text('Add $title'),
-        content: Text(
-          'This section is prepared as the shared data structure. '
-          'Available presets: ${choices.join(', ')}.',
-        ),
-        actions: <Widget>[
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Close'),
+Future<void> _addSimpleCollectionRecord(
+  BuildContext context, {
+  required String title,
+  required CollectionReference<Map<String, dynamic>> collection,
+  required List<String> choices,
+}) async {
+  final isRoles = title.toLowerCase() == 'roles';
+  final nameController = TextEditingController();
+  var selectedChoice = choices.first;
+  String? validationMessage;
+  Map<String, String>? result;
+
+  try {
+    result = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          backgroundColor: FxMasterC.card2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(isRoles ? 'Add role record' : 'Create TV group'),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                TextField(
+                  controller: nameController,
+                  autofocus: true,
+                  keyboardType: isRoles ? TextInputType.emailAddress : TextInputType.text,
+                  textCapitalization: isRoles ? TextCapitalization.none : TextCapitalization.words,
+                  decoration: InputDecoration(
+                    labelText: isRoles ? 'Email or user identifier' : 'Group name',
+                    hintText: isRoles ? 'staff@example.com' : 'e.g. Main Restaurant TVs',
+                    prefixIcon: Icon(isRoles ? Icons.person_outline_rounded : Icons.groups_rounded),
+                  ),
+                  onChanged: (_) {
+                    if (validationMessage != null) {
+                      setDialogState(() => validationMessage = null);
+                    }
+                  },
+                ),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<String>(
+                  dropdownColor: FxMasterC.card2,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  initialValue: selectedChoice,
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                    labelText: isRoles ? 'Role label' : 'Initial group status',
+                    prefixIcon: Icon(isRoles ? Icons.admin_panel_settings_outlined : Icons.toggle_on_outlined),
+                  ),
+                  items: choices
+                      .map((choice) => DropdownMenuItem<String>(
+                            value: choice,
+                            child: Text(choice, overflow: TextOverflow.ellipsis),
+                          ))
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) setDialogState(() => selectedChoice = value);
+                  },
+                ),
+                if (isRoles) ...<Widget>[
+                  const SizedBox(height: 10),
+                  const Text(
+                    'This creates a role record. Actual account permissions still depend on Firebase Authentication and Security Rules.',
+                    style: TextStyle(color: Colors.white60, fontSize: 12, height: 1.4),
+                  ),
+                ],
+                if (validationMessage != null) ...<Widget>[
+                  const SizedBox(height: 10),
+                  Text(validationMessage!, style: const TextStyle(color: FxMasterC.red, fontSize: 12)),
+                ],
+              ],
+            ),
           ),
-        ],
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton.icon(
+              onPressed: () {
+                final value = nameController.text.trim();
+                if (value.isEmpty) {
+                  setDialogState(() => validationMessage = isRoles
+                      ? 'Enter an email or user identifier.'
+                      : 'Enter a group name.');
+                  return;
+                }
+                if (isRoles && value.contains(' ') ) {
+                  setDialogState(() => validationMessage = 'Use an email or a single user identifier.');
+                  return;
+                }
+                Navigator.pop(dialogContext, <String, String>{
+                  'name': value,
+                  'choice': selectedChoice,
+                });
+              },
+              icon: const Icon(Icons.save_rounded, size: 17),
+              label: const Text('Create'),
+            ),
+          ],
+        ),
+      ),
+    );
+  } finally {
+    nameController.dispose();
+  }
+
+  if (result == null) return;
+  final name = (result['name'] ?? '').trim();
+  final choice = result['choice'] ?? choices.first;
+  if (name.isEmpty) return;
+
+  try {
+    final now = FieldValue.serverTimestamp();
+    final data = <String, dynamic>{
+      'name': name,
+      'createdAt': now,
+      'updatedAt': now,
+    };
+    if (isRoles) {
+      data.addAll(<String, dynamic>{
+        'email': name,
+        'role': choice,
+        'active': true,
+      });
+    } else {
+      final active = choice.toLowerCase() == 'active';
+      data.addAll(<String, dynamic>{
+        'status': choice.toLowerCase(),
+        'active': active,
+        'deviceIds': <String>[],
+      });
+    }
+    await collection.add(data);
+    await fxMasterAudit('create', isRoles ? 'admin_role' : 'tv_group', '$name • $choice');
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(isRoles ? 'Role record created for $name.' : 'TV group "$name" created.')),
       );
-    },
-  );
+    }
+  } catch (_) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Could not create ${isRoles ? 'role record' : 'TV group'}. Check Firebase write permissions and try again.',
+          ),
+        ),
+      );
+    }
+  }
 }
 
 Widget _fxMasterListPage(
@@ -2289,30 +3812,47 @@ Widget _fxMasterListPage(
     children: <Widget>[
       Padding(
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
-        child: Row(
-          children: <Widget>[
-            Expanded(
-              child: Column(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 760;
+            final titleBlock = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  title,
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: .68),
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            );
+
+            if (compact) {
+              return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(color: Colors.white.withOpacity(.55)),
-                  ),
+                  titleBlock,
+                  const SizedBox(height: 12),
+                  Align(alignment: Alignment.centerRight, child: action),
                 ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            action,
-          ],
+              );
+            }
+
+            return Row(
+              children: <Widget>[
+                Expanded(child: titleBlock),
+                const SizedBox(width: 16),
+                action,
+              ],
+            );
+          },
         ),
       ),
       Expanded(child: child),
@@ -2356,12 +3896,12 @@ Widget _fxPill(String text) {
   return Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
     decoration: BoxDecoration(
-      color: FxMasterC.primary.withOpacity(.14),
+      color: FxMasterC.primary.withValues(alpha: .20),
       borderRadius: BorderRadius.circular(8),
     ),
     child: Text(
       text,
-      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
     ),
   );
 }
