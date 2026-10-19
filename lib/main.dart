@@ -155,12 +155,14 @@ class C {
   static const card = Color(0xFF11141B);
   static const card2 = Color(0xFF151923);
   static const border = Color(0x12FFFFFF);
-  static const primary = Color(0xFF7656F8);
-  static const light = Color(0xFFA996FF);
+  static const primary = Color(0xFF0F766E);
+  static const light = Color(0xFF5EEAD4);
   static const green = Color(0xFF3DDB8B);
   static const red = Color(0xFFE05252);
   static const amber = Color(0xFFFFB84D);
   static const cyan = Color(0xFF39BDF8);
+  static const teal = Color(0xFF0F766E);
+  static const tealLight = Color(0xFF5EEAD4);
 }
 
 class Paths {
@@ -533,11 +535,58 @@ class TVPhotoManagerApp extends StatelessWidget {
         brightness: Brightness.dark,
         useMaterial3: true,
         scaffoldBackgroundColor: C.bg,
-        colorScheme: ColorScheme.fromSeed(
+                colorScheme: ColorScheme.fromSeed(
           seedColor: C.primary,
           brightness: Brightness.dark,
+        ).copyWith(
+          primary: C.primary,
+          onPrimary: Colors.white,
+          secondary: C.cyan,
+          onSecondary: Colors.white,
+          surface: C.card,
+          onSurface: const Color(0xFFE8EEF4),
+        ),
+        // FINAL_FX_GLOBAL_CONTRAST_V2
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            foregroundColor: Colors.white,
+            disabledForegroundColor: const Color(0xFFD0D8E0),
+            disabledBackgroundColor: const Color(0xFF34414D),
+            minimumSize: const Size(44, 44),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFFE8EEF4),
+            disabledForegroundColor: const Color(0xFFB7C2CC),
+            side: const BorderSide(color: Color(0xFF536273)),
+            minimumSize: const Size(44, 44),
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: const Color(0xFF5EEAD4),
+            disabledForegroundColor: const Color(0xFFB7C2CC),
+            minimumSize: const Size(44, 44),
+          ),
+        ),
+        chipTheme: ChipThemeData(
+          backgroundColor: const Color(0xFF18232E),
+          selectedColor: const Color(0xFF0F766E),
+          disabledColor: const Color(0xFF26313B),
+          secondarySelectedColor: const Color(0xFF0F766E),
+          labelStyle: const TextStyle(color: Color(0xFFE8EEF4), fontWeight: FontWeight.w600),
+          secondaryLabelStyle: const TextStyle(color: Colors.white),
+          side: const BorderSide(color: Color(0xFF536273)),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
         inputDecorationTheme: InputDecorationTheme(
+
           filled: true,
           fillColor: C.card2,
           border: OutlineInputBorder(
@@ -717,12 +766,24 @@ class _AdminShellState extends State<AdminShell> {
           overflow: TextOverflow.ellipsis,
           style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
         ),
-        leading: Builder(
-          builder: (buttonContext) => IconButton(
-            tooltip: 'Open navigation menu',
-            icon: const Icon(Icons.menu_rounded),
-            onPressed: () => Scaffold.of(buttonContext).openDrawer(),
-          ),
+        leadingWidth: index == 0 ? 56 : 104,
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (index != 0)
+              IconButton(
+                tooltip: 'Back to Dashboard',
+                icon: const Icon(Icons.arrow_back_rounded),
+                onPressed: () => _selectPage(0),
+              ),
+            Builder(
+              builder: (buttonContext) => IconButton(
+                tooltip: 'Open navigation menu',
+                icon: const Icon(Icons.menu_rounded),
+                onPressed: () => Scaffold.of(buttonContext).openDrawer(),
+              ),
+            ),
+          ],
         ),
       ),
       drawer: Drawer(
@@ -1009,11 +1070,11 @@ Widget cardPanel({
 }
 
 ButtonStyle outline({bool danger = false}) => OutlinedButton.styleFrom(
-  foregroundColor: danger ? const Color(0xFFFF8D8D) : Colors.white70,
+  foregroundColor: danger ? const Color(0xFFFFB4B4) : const Color(0xFFE8EEF4),
   side: BorderSide(
     color: danger
         ? C.red.withValues(alpha: .45)
-        : Colors.white.withValues(alpha: .12),
+        : const Color(0xFF536273),
   ),
   padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1727,7 +1788,10 @@ class _MediaScreenState extends State<MediaScreen> {
       ),
       FilledButton.icon(
         onPressed: uploading ? null : upload,
-        style: FilledButton.styleFrom(backgroundColor: C.primary),
+        style: FilledButton.styleFrom(
+          backgroundColor: C.primary,
+          foregroundColor: Colors.white,
+        ),
         icon: const Icon(Icons.cloud_upload_rounded, size: 18),
         label: Text(uploading ? 'Uploading...' : 'Upload Media'),
       ),
@@ -2351,7 +2415,10 @@ class _PlaylistsScreenState extends State<PlaylistsScreen> {
     );
     final addButton = FilledButton.icon(
       onPressed: () => unawaited(edit()),
-      style: FilledButton.styleFrom(backgroundColor: C.primary),
+      style: FilledButton.styleFrom(
+          backgroundColor: C.primary,
+          foregroundColor: Colors.white,
+        ),
       icon: const Icon(Icons.add_rounded),
       label: const Text('Create Playlist'),
     );
@@ -2664,7 +2731,10 @@ class _DevicesScreenState extends State<DevicesScreen> {
     );
     final addButton = FilledButton.icon(
       onPressed: () => unawaited(edit()),
-      style: FilledButton.styleFrom(backgroundColor: C.primary),
+      style: FilledButton.styleFrom(
+          backgroundColor: C.primary,
+          foregroundColor: Colors.white,
+        ),
       icon: const Icon(Icons.add_rounded),
       label: const Text('Add TV'),
     );
@@ -2787,6 +2857,83 @@ class _DevicesScreenState extends State<DevicesScreen> {
 // SCHEDULE
 // ============================================================================
 
+// HOTEL-GRADE SCHEDULE THEME HELPERS
+const Color _hotelScheduleTeal = Color(0xFF0F766E);
+const Color _hotelScheduleTealBright = Color(0xFF5EEAD4);
+const Color _hotelScheduleNavy = Color(0xFF111B26);
+const Color _hotelSchedulePanel = Color(0xFF182431);
+const Color _hotelScheduleBorder = Color(0xFF3A4B5B);
+const Color _hotelScheduleText = Color(0xFFE8EEF4);
+const Color _hotelScheduleMuted = Color(0xFFB8C4CF);
+const Color _hotelScheduleGold = Color(0xFFC9A96A);
+
+ButtonStyle _hotelSchedulePrimaryButtonStyle() => FilledButton.styleFrom(
+  backgroundColor: _hotelScheduleTeal,
+  foregroundColor: Colors.white,
+  disabledBackgroundColor: const Color(0xFF344454),
+  disabledForegroundColor: const Color(0xFFE0E7ED),
+  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+);
+
+ButtonStyle _hotelScheduleSecondaryButtonStyle() => OutlinedButton.styleFrom(
+  backgroundColor: _hotelSchedulePanel,
+  foregroundColor: _hotelScheduleText,
+  side: const BorderSide(color: _hotelScheduleBorder),
+  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+);
+
+ButtonStyle _hotelSchedulePickerButtonStyle() => OutlinedButton.styleFrom(
+  backgroundColor: const Color(0xFF1A2936),
+  foregroundColor: _hotelScheduleText,
+  side: const BorderSide(color: _hotelScheduleBorder),
+  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+);
+
+ThemeData _hotelScheduleDialogTheme(ThemeData base) => base.copyWith(
+  colorScheme: base.colorScheme.copyWith(
+    primary: _hotelScheduleTeal,
+    onPrimary: Colors.white,
+    secondary: _hotelScheduleTealBright,
+    onSecondary: const Color(0xFF062D2A),
+    surface: _hotelScheduleNavy,
+    onSurface: _hotelScheduleText,
+  ),
+  dialogBackgroundColor: _hotelScheduleNavy,
+  textButtonTheme: TextButtonThemeData(
+    style: TextButton.styleFrom(foregroundColor: _hotelScheduleTealBright),
+  ),
+  inputDecorationTheme: InputDecorationTheme(
+    filled: true,
+    fillColor: _hotelSchedulePanel,
+    labelStyle: const TextStyle(color: _hotelScheduleMuted),
+    hintStyle: const TextStyle(color: _hotelScheduleMuted),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: _hotelScheduleBorder),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: _hotelScheduleBorder),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: _hotelScheduleTealBright, width: 1.5),
+    ),
+  ),
+);
+
+Widget _hotelSchedulePickerTheme(BuildContext context, Widget? child) => Theme(
+  data: _hotelScheduleDialogTheme(Theme.of(context)),
+  child: child ?? const SizedBox.shrink(),
+);
+
+
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
   @override
@@ -2855,13 +3002,19 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
     final ok = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialog) => AlertDialog(
+      builder: (dialogContext) => Theme(
+        data: _hotelScheduleDialogTheme(Theme.of(dialogContext)),
+        child: StatefulBuilder(
+          builder: (context, setDialog) => AlertDialog(
           backgroundColor: C.card2,
           title: Text(existing == null ? 'Create schedule' : 'Edit schedule'),
           content: SizedBox(
-            width: 760,
-            height: 580,
+            width: MediaQuery.sizeOf(context).width < 600
+                ? MediaQuery.sizeOf(context).width * 0.82
+                : 760,
+            height: MediaQuery.sizeOf(context).height < 760
+                ? MediaQuery.sizeOf(context).height * 0.52
+                : 580,
             child: SingleChildScrollView(
               child: Column(
                 children: [
@@ -2872,6 +3025,22 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     ),
                   ),
                   const SizedBox(height: 14),
+                  if (playlists.isEmpty) ...[
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFC9A96A).withValues(alpha: .10),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFC9A96A).withValues(alpha: .45)),
+                      ),
+                      child: const Text(
+                        'No playlists yet. Create a playlist in the Playlists section first. You can choose dates and times now, but saving requires a playlist.',
+                        style: TextStyle(color: Color(0xFFE8EEF4), height: 1.4),
+                      ),
+                    ),
+                  ],
                   DropdownButtonFormField<String>(
                     value: playlistId.isEmpty ? null : playlistId,
                     decoration: const InputDecoration(labelText: 'Playlist'),
@@ -2885,6 +3054,23 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         .toList(),
                     onChanged: (v) => setDialog(() => playlistId = v ?? ''),
                   ),
+                  if (playlists.isEmpty) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: C.amber.withValues(alpha: .10),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: C.amber.withValues(alpha: .40)),
+                      ),
+                      child: const Text(
+                        'No playlists yet. You can set the dates and times here, '
+                        'but first create a playlist in the Playlists section before saving this schedule.',
+                        style: TextStyle(height: 1.4),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 14),
                   Row(
                     children: [
@@ -2900,10 +3086,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                 const Duration(days: 3650),
                               ),
                               initialDate: start,
+                              builder: (pickerContext, child) =>
+                                  _hotelSchedulePickerTheme(pickerContext, child),
                             );
                             if (v != null) setDialog(() => start = v);
                           },
-                          icon: const Icon(Icons.event_rounded),
+                          style: _hotelSchedulePickerButtonStyle(),
+                          icon: const Icon(Icons.event_rounded, color: C.tealLight),
                           label: Text('Start ${dateText(start)}'),
                         ),
                       ),
@@ -2920,10 +3109,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                 const Duration(days: 3650),
                               ),
                               initialDate: end,
+                              builder: (pickerContext, child) =>
+                                  _hotelSchedulePickerTheme(pickerContext, child),
                             );
                             if (v != null) setDialog(() => end = v);
                           },
-                          icon: const Icon(Icons.event_rounded),
+                          style: _hotelSchedulePickerButtonStyle(),
+                          icon: const Icon(Icons.event_rounded, color: C.tealLight),
                           label: Text('End ${dateText(end)}'),
                         ),
                       ),
@@ -2941,12 +3133,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                 hour: (from ~/ 60) % 24,
                                 minute: from % 60,
                               ),
+                              builder: (pickerContext, child) =>
+                                  _hotelSchedulePickerTheme(pickerContext, child),
                             );
                             if (v != null) {
                               setDialog(() => from = v.hour * 60 + v.minute);
                             }
                           },
-                          icon: const Icon(Icons.schedule_rounded),
+                          style: _hotelSchedulePickerButtonStyle(),
+                          icon: const Icon(Icons.schedule_rounded, color: C.amber),
                           label: Text('From ${timeText(from)}'),
                         ),
                       ),
@@ -2960,12 +3155,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                 hour: (to ~/ 60) % 24,
                                 minute: to % 60,
                               ),
+                              builder: (pickerContext, child) =>
+                                  _hotelSchedulePickerTheme(pickerContext, child),
                             );
                             if (v != null) {
                               setDialog(() => to = v.hour * 60 + v.minute);
                             }
                           },
-                          icon: const Icon(Icons.schedule_rounded),
+                          style: _hotelSchedulePickerButtonStyle(),
+                          icon: const Icon(Icons.schedule_rounded, color: C.amber),
                           label: Text('Until ${timeText(to)}'),
                         ),
                       ),
@@ -2997,8 +3195,32 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       ];
                       final day = i + 1;
                       return FilterChip(
-                        label: Text(labels[i]),
+                        label: Text(
+                          labels[i],
+                          style: TextStyle(
+                            color: days.contains(day)
+                                ? Colors.white
+                                : const Color(0xFFD4DCE5),
+                            fontSize: 12,
+                            fontWeight: days.contains(day)
+                                ? FontWeight.w800
+                                : FontWeight.w600,
+                          ),
+                        ),
                         selected: days.contains(day),
+                        showCheckmark: true,
+                        checkmarkColor: Colors.white,
+                        selectedColor: C.teal,
+                        backgroundColor: C.card2,
+                        side: BorderSide(
+                          color: days.contains(day) ? C.tealLight : C.border,
+                          width: days.contains(day) ? 1.3 : 1,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(11),
+                        ),
+                        labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
                         onSelected: (v) {
                           setDialog(() {
                             if (v) {
@@ -3039,6 +3261,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                               final selected = tvs.contains(device.id);
                               return CheckboxListTile(
                                 dense: true,
+                                activeColor: C.teal,
                                 value: selected,
                                 title: Text(device.name),
                                 subtitle: Text(device.status),
@@ -3056,6 +3279,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           ),
                   ),
                   SwitchListTile(
+                    activeTrackColor: C.teal,
+                    activeThumbColor: Colors.white,
                     value: enabled,
                     title: const Text('Schedule enabled'),
                     onChanged: (v) => setDialog(() => enabled = v),
@@ -3070,17 +3295,39 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               child: const Text('Cancel'),
             ),
             FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: C.teal,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(140, 46),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
               onPressed: () => Navigator.pop(dialogContext, true),
               child: const Text('Save Schedule'),
             ),
           ],
+          ),
         ),
       ),
     );
 
-    if (ok != true) return;
+    if (ok != true || !mounted) return;
     final title = name.text.trim();
-    if (title.isEmpty || playlistId.isEmpty) return;
+    String? validationMessage;
+    if (title.isEmpty) {
+      validationMessage = 'Enter a name for this schedule.';
+    } else if (playlistId.isEmpty) {
+      validationMessage = 'Create and select a playlist before saving the schedule.';
+    } else if (end.isBefore(start)) {
+      validationMessage = 'End date must be the same as or later than the start date.';
+    } else if (to <= from) {
+      validationMessage = 'End time must be later than start time.';
+    }
+    if (validationMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(validationMessage)),
+      );
+      return;
+    }
 
     final sid = existing?.id ?? id();
     await Paths.schedules.doc(sid).set({
@@ -3154,13 +3401,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final compact = MediaQuery.sizeOf(context).width < 760;
     final refreshButton = OutlinedButton.icon(
       onPressed: load,
-      style: outline(),
+      style: _hotelScheduleSecondaryButtonStyle(),
       icon: const Icon(Icons.refresh_rounded, size: 17),
       label: const Text('Refresh'),
     );
     final addButton = FilledButton.icon(
-      onPressed: playlists.isEmpty ? null : () => unawaited(edit()),
-      style: FilledButton.styleFrom(backgroundColor: C.primary),
+      onPressed: () => unawaited(edit()),
+      style: _hotelSchedulePrimaryButtonStyle(),
       icon: const Icon(Icons.add_rounded),
       label: const Text('Create Schedule'),
     );
@@ -3190,7 +3437,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 ? Center(
                     child: cardPanel(
                       title: 'No schedules yet',
-                      subtitle: 'Create a playlist first, then schedule it.',
+                      subtitle: playlists.isEmpty
+                          ? 'Create a playlist first. Then set the calendar dates, time range, weekdays and TV devices.'
+                          : 'Your schedule list is empty. Select Create Schedule to add one.',
                       child: const SizedBox(
                         height: 240,
                         child: Center(child: Text('Create Schedule to begin.')),
@@ -3373,7 +3622,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     final saveButton = FilledButton.icon(
       onPressed: saving ? null : save,
-      style: FilledButton.styleFrom(backgroundColor: C.primary),
+      style: FilledButton.styleFrom(
+          backgroundColor: C.primary,
+          foregroundColor: Colors.white,
+        ),
       icon: const Icon(Icons.save_rounded),
       label: Text(saving ? 'Saving...' : 'Save Settings'),
     );

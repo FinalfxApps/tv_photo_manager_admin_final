@@ -419,35 +419,369 @@ class _FxRestaurantStudioScreenState extends State<FxRestaurantStudioScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: <Widget>[
-        Material(
-          color: FxMasterC.card2,
-          child: TabBar(
-            controller: _tabs,
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-            tabs: labels.map((label) => Tab(text: label)).toList(),
+    const icons = <IconData>[
+      Icons.dashboard_rounded,
+      Icons.category_rounded,
+      Icons.restaurant_menu_rounded,
+      Icons.local_offer_rounded,
+      Icons.dashboard_customize_rounded,
+      Icons.groups_rounded,
+      Icons.settings_remote_rounded,
+      Icons.qr_code_2_rounded,
+      Icons.admin_panel_settings_rounded,
+      Icons.history_rounded,
+    ];
+
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final compact = screenWidth < 800;
+
+    return Theme(
+      data: Theme.of(context).copyWith(
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: FxMasterC.bg,
+        colorScheme: Theme.of(context).colorScheme.copyWith(
+          brightness: Brightness.dark,
+          primary: FxMasterC.primary,
+          surface: FxMasterC.card,
+        ),
+        textTheme: Theme.of(context).textTheme
+            .apply(bodyColor: Colors.white, displayColor: Colors.white),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: FxMasterC.card,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: FxMasterC.border),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: FxMasterC.border),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: FxMasterC.primary, width: 1.4),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
           ),
         ),
-        Expanded(
-          child: TabBarView(
-            controller: _tabs,
-            children: const <Widget>[
-              _FxOverview(),
-              _FxCategories(),
-              _FxMenu(),
-              _FxOffers(),
-              _FxTemplates(),
-              _FxGroups(),
-              _FxRemote(),
-              _FxQr(),
-              _FxRoles(),
-              _FxAudit(),
+        cardTheme: CardThemeData(
+          color: FxMasterC.card,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: const BorderSide(color: FxMasterC.border),
+          ),
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: FxMasterC.bg,
+        body: SafeArea(
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: compact ? 74 : 238,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF0B0E14),
+                  border: Border(right: BorderSide(color: FxMasterC.border)),
+                ),
+                child: AnimatedBuilder(
+                  animation: _tabs,
+                  builder: (context, _) {
+                    final selected = _tabs.index;
+                    return Column(
+                      children: <Widget>[
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(18, 18, 16, 20),
+                          child: Row(
+                            mainAxisAlignment: compact
+                                ? MainAxisAlignment.center
+                                : MainAxisAlignment.start,
+                            children: <Widget>[
+                              Container(
+                                width: 42,
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(13),
+                                  gradient: const LinearGradient(
+                                    colors: <Color>[
+                                      FxMasterC.primary,
+                                      Color(0xFF9B7CFF),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.restaurant_rounded,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              if (!compact) ...[
+                                const SizedBox(width: 11),
+                                const Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: <Widget>[
+                                      Text(
+                                        'FINAL FX',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          letterSpacing: 2,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.white54,
+                                        ),
+                                      ),
+                                      SizedBox(height: 2),
+                                      Text(
+                                        'TV Manager',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        if (!compact)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 11,
+                                vertical: 9,
+                              ),
+                              decoration: BoxDecoration(
+                                color: FxMasterC.green.withOpacity(.08),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: FxMasterC.green.withOpacity(.18),
+                                ),
+                              ),
+                              child: const Row(
+                                children: <Widget>[
+                                  Icon(
+                                    Icons.circle,
+                                    size: 8,
+                                    color: FxMasterC.green,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'SYSTEM ONLINE',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: .8,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 20),
+                        Expanded(
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            itemCount: labels.length,
+                            itemBuilder: (context, index) {
+                              final active = selected == index;
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 4),
+                                child: Material(
+                                  color: active
+                                      ? FxMasterC.primary.withOpacity(.14)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(11),
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(11),
+                                    onTap: () => _tabs.animateTo(index),
+                                    child: Container(
+                                      height: 44,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(11),
+                                        border: Border.all(
+                                          color: active
+                                              ? FxMasterC.primary.withOpacity(
+                                                  .25,
+                                                )
+                                              : Colors.transparent,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: <Widget>[
+                                          Icon(
+                                            icons[index],
+                                            size: 18,
+                                            color: active
+                                                ? Colors.white
+                                                : Colors.white54,
+                                          ),
+                                          if (!compact)
+                                            const SizedBox(width: 12),
+                                          if (!compact)
+                                            Expanded(
+                                              child: Text(
+                                                labels[index],
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: active
+                                                      ? FontWeight.w700
+                                                      : FontWeight.w500,
+                                                  color: active
+                                                      ? Colors.white
+                                                      : Colors.white60,
+                                                ),
+                                              ),
+                                            ),
+                                          if (active)
+                                            Container(
+                                              width: 5,
+                                              height: 5,
+                                              decoration: const BoxDecoration(
+                                                color: FxMasterC.primary,
+                                                shape: BoxShape.circle,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        if (!compact)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                            child: Text(
+                              'FINAL FX • Restaurant & TV Control',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.white.withOpacity(.32),
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  children: <Widget>[
+                    Container(
+                      height: 72,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: compact ? 16 : 26,
+                      ),
+                      decoration: const BoxDecoration(
+                        color: FxMasterC.card2,
+                        border: Border(
+                          bottom: BorderSide(color: FxMasterC.border),
+                        ),
+                      ),
+                      child: Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: AnimatedBuilder(
+                              animation: _tabs,
+                              builder: (context, _) => Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Text(
+                                    labels[_tabs.index],
+                                    style: const TextStyle(
+                                      fontSize: 19,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  if (!compact) const SizedBox(height: 2),
+                                  if (!compact)
+                                    Text(
+                                      'Manage your restaurant display workspace',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.white.withOpacity(.42),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          if (!compact)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 11,
+                                vertical: 7,
+                              ),
+                              decoration: BoxDecoration(
+                                color: FxMasterC.green.withOpacity(.09),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: FxMasterC.green.withOpacity(.22),
+                                ),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: <Widget>[
+                                  Icon(
+                                    Icons.circle,
+                                    size: 7,
+                                    color: FxMasterC.green,
+                                  ),
+                                  SizedBox(width: 7),
+                                  Text(
+                                    'LIVE',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Container(
+                        color: FxMasterC.bg,
+                        child: TabBarView(
+                          controller: _tabs,
+                          children: const <Widget>[
+                            _FxOverview(),
+                            _FxCategories(),
+                            _FxMenu(),
+                            _FxOffers(),
+                            _FxTemplates(),
+                            _FxGroups(),
+                            _FxRemote(),
+                            _FxQr(),
+                            _FxRoles(),
+                            _FxAudit(),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -502,13 +836,14 @@ class _FxOverview extends StatelessWidget {
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final columns = constraints.maxWidth >= 900 ? 3 : 1;
+                      final ratio = constraints.maxWidth < 600 ? 2.0 : 2.8;
                       return GridView.count(
                         crossAxisCount: columns,
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         crossAxisSpacing: 14,
                         mainAxisSpacing: 14,
-                        childAspectRatio: 2.8,
+                        childAspectRatio: ratio,
                         children: cards,
                       );
                     },
@@ -1518,21 +1853,718 @@ class _FxOffersState extends State<_FxOffers> {
 class _FxTemplates extends StatelessWidget {
   const _FxTemplates();
 
+  static const _presets = <String>[
+    'Classic Hero',
+    'Food Grid',
+    'Special Offer',
+    'Combo Deals',
+    'Category Showcase',
+    'New Arrival',
+    'Breakfast',
+    'Dessert',
+    'Drinks',
+    'Good Food • Good Mood',
+  ];
+
   @override
   Widget build(BuildContext context) {
-    return _simpleCollection(
-      'TV Templates',
-      FxMasterDb.templates,
-      Icons.dashboard_customize_rounded,
-      const <String>[
-        'Fullscreen Photo',
-        'Photo + Price',
-        'Menu Grid',
-        'Premium Restaurant',
-        'Split Screen',
-        'Offers Screen',
-        'Mixed Slideshow',
-      ],
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FxMasterDb.templates.snapshots(),
+      builder: (context, snapshot) {
+        final docs = snapshot.data?.docs ??
+            const <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+
+        return _fxMasterListPage(
+          'TV Templates',
+          'Choose a layout and preview how it can look on your restaurant TV.',
+          FilledButton.icon(
+            onPressed: () => _showScaffoldInfo(
+              context,
+              'TV Templates',
+              _presets,
+            ),
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('Add'),
+          ),
+          snapshot.hasError
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      'Templates could not be loaded. Check the Firebase connection and try again.\n${snapshot.error}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white60),
+                    ),
+                  ),
+                )
+              : snapshot.connectionState == ConnectionState.waiting &&
+                      !snapshot.hasData
+                  ? const Center(child: CircularProgressIndicator())
+                  : docs.isEmpty
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                Icon(
+                                  Icons.dashboard_customize_rounded,
+                                  size: 44,
+                                  color: FxMasterC.primary,
+                                ),
+                                SizedBox(height: 12),
+                                Text(
+                                  'No templates found yet',
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                SizedBox(height: 5),
+                                Text(
+                                  'Template cards will appear here when they are added to the shared collection.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white60),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            final columns = constraints.maxWidth >= 1000 ? 2 : 1;
+                            final cellWidth = (constraints.maxWidth -
+                                    (columns - 1) * 16) /
+                                columns;
+                            // 16:9 artwork plus room for title, category and action.
+                            final tileHeight = cellWidth * 9 / 16 + 130;
+                            final aspectRatio = cellWidth / tileHeight;
+
+                            return GridView.builder(
+                              padding: const EdgeInsets.fromLTRB(24, 18, 24, 28),
+                              itemCount: docs.length,
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: columns,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                                childAspectRatio: aspectRatio,
+                              ),
+                              itemBuilder: (context, index) {
+                                final doc = docs[index];
+                                final data = doc.data();
+                                final rawName = (data['name'] ??
+                                        data['title'] ??
+                                        doc.id)
+                                    .toString()
+                                    .trim();
+                                final name = rawName.isEmpty ? doc.id : rawName;
+                                final layout = (data['layout'] ??
+                                        data['category'] ??
+                                        data['type'] ??
+                                        'template')
+                                    .toString();
+                                final imageValue = data['previewUrl'] ??
+                                    data['thumbnailUrl'] ??
+                                    data['imageUrl'] ??
+                                    data['photoUrl'];
+                                final imageUrl = imageValue?.toString().trim();
+
+                                return _FxTemplateCard(
+                                  name: name,
+                                  layout: layout,
+                                  imageUrl: imageUrl == null || imageUrl.isEmpty
+                                      ? null
+                                      : imageUrl,
+                                  onPreview: () => _showFxTemplatePreview(
+                                    context,
+                                    name: name,
+                                    layout: layout,
+                                    imageUrl: imageUrl == null || imageUrl.isEmpty
+                                        ? null
+                                        : imageUrl,
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+        );
+      },
+    );
+  }
+}
+
+class _FxTemplateCard extends StatelessWidget {
+  const _FxTemplateCard({
+    required this.name,
+    required this.layout,
+    required this.imageUrl,
+    required this.onPreview,
+  });
+
+  final String name;
+  final String layout;
+  final String? imageUrl;
+  final VoidCallback onPreview;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: FxMasterC.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: FxMasterC.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: _FxTemplateArtwork(
+              name: name,
+              layout: layout,
+              imageUrl: imageUrl,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              _fxPill(layout.isEmpty ? 'template' : layout),
+            ],
+          ),
+          const SizedBox(height: 9),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: onPreview,
+              icon: const Icon(Icons.visibility_rounded, size: 17),
+              label: const Text('Preview template'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: BorderSide(color: FxMasterC.primary.withOpacity(.55)),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(11),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Future<void> _showFxTemplatePreview(
+  BuildContext context, {
+  required String name,
+  required String layout,
+  required String? imageUrl,
+}) async {
+  await showDialog<void>(
+    context: context,
+    builder: (dialogContext) => Dialog(
+      backgroundColor: FxMasterC.card2,
+      insetPadding: const EdgeInsets.all(24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 900),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            fontSize: 21,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'TV template preview • $layout',
+                          style: const TextStyle(color: Colors.white60),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Close preview',
+                    onPressed: () => Navigator.pop(dialogContext),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 400,
+                child: _FxTemplateArtwork(
+                  name: name,
+                  layout: layout,
+                  imageUrl: imageUrl,
+                  expanded: true,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: <Widget>[
+                  const Icon(
+                    Icons.tv_rounded,
+                    color: FxMasterC.primary,
+                    size: 19,
+                  ),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Illustrative layout preview. Connect menu photos and content to create a live menu preview.',
+                      style: TextStyle(color: Colors.white60, fontSize: 12),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: const Text('Close'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _FxTemplateArtwork extends StatelessWidget {
+  const _FxTemplateArtwork({
+    required this.name,
+    required this.layout,
+    required this.imageUrl,
+    this.expanded = false,
+  });
+
+  final String name;
+  final String layout;
+  final String? imageUrl;
+  final bool expanded;
+
+  @override
+  Widget build(BuildContext context) {
+    final key = '$name $layout'.toLowerCase();
+    final accent = key.contains('offer')
+        ? FxMasterC.red
+        : key.contains('drink')
+            ? const Color(0xFF34C7E8)
+            : key.contains('dessert') || key.contains('breakfast')
+                ? FxMasterC.gold
+                : FxMasterC.primary;
+    final isOffer = key.contains('offer');
+    final isGrid = key.contains('grid') || key.contains('combo');
+    final isCategories = key.contains('categor');
+    final isDrinks = key.contains('drink');
+    final isDessert = key.contains('dessert');
+    final isBreakfast = key.contains('breakfast');
+    final isBrand = key.contains('brand') || key.contains('mood');
+
+    final items = isDrinks
+        ? const <(String, String, String)>[
+            ('🥤', 'COLD DRINKS', 'SAR 8'),
+            ('☕', 'HOT COFFEE', 'SAR 10'),
+            ('🧋', 'SPECIAL', 'SAR 14'),
+          ]
+        : isDessert
+            ? const <(String, String, String)>[
+                ('🍰', 'CHEESECAKE', 'SAR 18'),
+                ('🍩', 'DONUTS', 'SAR 9'),
+                ('🍮', 'PUDDING', 'SAR 12'),
+              ]
+            : isBreakfast
+                ? const <(String, String, String)>[
+                    ('🍳', 'EGGS MEAL', 'SAR 16'),
+                    ('🥞', 'PANCAKES', 'SAR 19'),
+                    ('🥐', 'BAKERY', 'SAR 8'),
+                  ]
+                : isCategories
+                    ? const <(String, String, String)>[
+                        ('🍔', 'BURGERS', 'EXPLORE'),
+                        ('🍕', 'PIZZA', 'EXPLORE'),
+                        ('🍗', 'CHICKEN', 'EXPLORE'),
+                      ]
+                    : const <(String, String, String)>[
+                        ('🍔', 'CLASSIC BURGER', 'SAR 24'),
+                        ('🍕', 'FAMILY PIZZA', 'SAR 39'),
+                        ('🍗', 'CRISPY CHICKEN', 'SAR 29'),
+                      ];
+
+    final heroEmoji = isDrinks
+        ? '🥤'
+        : isDessert
+            ? '🍰'
+            : isBreakfast
+                ? '🥞'
+                : isBrand
+                    ? '🍽️'
+                    : '🍗';
+    final headline = isDrinks
+        ? 'FRESH & COOL'
+        : isDessert
+            ? 'SWEET MOMENTS'
+            : isBreakfast
+                ? 'GOOD MORNING'
+                : isBrand
+                    ? 'GOOD FOOD.\nGOOD MOOD.'
+                    : 'SIGNATURE\nFLAVOUR';
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: <Color>[Color(0xFF24203B), Color(0xFF090B12)],
+          ),
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            if (imageUrl != null && imageUrl!.isNotEmpty)
+              Image.network(
+                imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: <Color>[
+                    const Color(0xFF07090E).withOpacity(.94),
+                    const Color(0xFF10131B).withOpacity(.72),
+                    accent.withOpacity(.26),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.all(expanded ? 28 : 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      Icon(
+                        Icons.restaurant_rounded,
+                        size: expanded ? 23 : 15,
+                        color: accent,
+                      ),
+                      const SizedBox(width: 7),
+                      Text(
+                        'FINAL FX',
+                        style: TextStyle(
+                          fontSize: expanded ? 15 : 10,
+                          letterSpacing: 2,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: expanded ? 12 : 7,
+                          vertical: expanded ? 7 : 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: accent.withOpacity(.18),
+                          borderRadius: BorderRadius.circular(7),
+                          border: Border.all(color: accent.withOpacity(.45)),
+                        ),
+                        child: Text(
+                          layout.toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: expanded ? 12 : 8,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: .7,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: expanded ? 22 : 10),
+                  Expanded(
+                    child: isOffer
+                        ? Row(
+                            children: <Widget>[
+                              Container(
+                                width: expanded ? 150 : 75,
+                                height: expanded ? 150 : 75,
+                                decoration: BoxDecoration(
+                                  color: accent,
+                                  shape: BoxShape.circle,
+                                  boxShadow: <BoxShadow>[
+                                    BoxShadow(
+                                      color: accent.withOpacity(.28),
+                                      blurRadius: 22,
+                                    ),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '30%\nOFF',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: expanded ? 30 : 17,
+                                      height: 1.05,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: expanded ? 26 : 14),
+                              Expanded(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Text(
+                                      'LIMITED TIME',
+                                      style: TextStyle(
+                                        color: accent,
+                                        fontSize: expanded ? 14 : 9,
+                                        letterSpacing: 1.5,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                    SizedBox(height: expanded ? 9 : 4),
+                                    Text(
+                                      'SPECIAL OFFER',
+                                      maxLines: 2,
+                                      style: TextStyle(
+                                        fontSize: expanded ? 30 : 17,
+                                        height: 1.0,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                    SizedBox(height: expanded ? 10 : 4),
+                                    Text(
+                                      'Big flavour. Better value.',
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: expanded ? 15 : 9,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (expanded)
+                                const Text('🍔', style: TextStyle(fontSize: 74)),
+                            ],
+                          )
+                        : isGrid || isCategories || isDrinks || isDessert || isBreakfast
+                            ? Row(
+                                children: <Widget>[
+                                  for (final item in items)
+                                    Expanded(
+                                      child: _FxTemplateMiniItem(
+                                        emoji: item.$1,
+                                        title: item.$2,
+                                        subtitle: item.$3,
+                                        accent: accent,
+                                        expanded: expanded,
+                                      ),
+                                    ),
+                                ],
+                              )
+                            : Row(
+                                children: <Widget>[
+                                  Expanded(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: <Widget>[
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: expanded ? 12 : 7,
+                                            vertical: expanded ? 7 : 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: accent.withOpacity(.2),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            isBrand ? 'OUR PROMISE' : 'CHEF’S PICK',
+                                            style: TextStyle(
+                                              color: accent,
+                                              fontSize: expanded ? 12 : 8,
+                                              fontWeight: FontWeight.w900,
+                                              letterSpacing: 1,
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(height: expanded ? 14 : 7),
+                                        Text(
+                                          headline,
+                                          maxLines: 2,
+                                          style: TextStyle(
+                                            fontSize: expanded ? 39 : 20,
+                                            height: .98,
+                                            letterSpacing: -.4,
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                        ),
+                                        SizedBox(height: expanded ? 12 : 6),
+                                        Text(
+                                          'Made fresh. Served with love.',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: expanded ? 16 : 9,
+                                          ),
+                                        ),
+                                        SizedBox(height: expanded ? 14 : 7),
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: expanded ? 14 : 8,
+                                            vertical: expanded ? 9 : 5,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: accent,
+                                            borderRadius: BorderRadius.circular(7),
+                                          ),
+                                          child: Text(
+                                            'ORDER NOW  →',
+                                            style: TextStyle(
+                                              fontSize: expanded ? 12 : 8,
+                                              fontWeight: FontWeight.w900,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(width: expanded ? 18 : 8),
+                                  Container(
+                                    width: expanded ? 230 : 105,
+                                    height: double.infinity,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: accent.withOpacity(.13),
+                                      border: Border.all(
+                                        color: accent.withOpacity(.35),
+                                        width: expanded ? 3 : 1.5,
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        heroEmoji,
+                                        style: TextStyle(
+                                          fontSize: expanded ? 116 : 55,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FxTemplateMiniItem extends StatelessWidget {
+  const _FxTemplateMiniItem({
+    required this.emoji,
+    required this.title,
+    required this.subtitle,
+    required this.accent,
+    required this.expanded,
+  });
+
+  final String emoji;
+  final String title;
+  final String subtitle;
+  final Color accent;
+  final bool expanded;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: expanded ? 7 : 3),
+      padding: EdgeInsets.all(expanded ? 14 : 7),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B0E15).withOpacity(.72),
+        borderRadius: BorderRadius.circular(expanded ? 14 : 8),
+        border: Border.all(color: Colors.white.withOpacity(.12)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Expanded(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                emoji,
+                style: TextStyle(fontSize: expanded ? 62 : 30),
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: expanded ? 13 : 9,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: accent,
+              fontSize: expanded ? 12 : 8,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

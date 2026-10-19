@@ -29,7 +29,7 @@ class FxMasterC {
   static const card = Color(0xFF11141B);
   static const card2 = Color(0xFF151923);
   static const border = Color(0x18FFFFFF);
-  static const primary = Color(0xFF7656F8);
+  static const primary = Color(0xFF0F766E);
   static const light = Color(0xFFA996FF);
   static const red = Color(0xFFE05252);
   static const green = Color(0xFF36C98A);
@@ -452,7 +452,11 @@ class _FxRestaurantStudioScreenState extends State<FxRestaurantStudioScreen>
         colorScheme: Theme.of(context).colorScheme.copyWith(
           brightness: Brightness.dark,
           primary: FxMasterC.primary,
+          onPrimary: Colors.white,
+          secondary: FxMasterC.gold,
+          onSecondary: Colors.white,
           surface: FxMasterC.card,
+          onSurface: const Color(0xFFE8EEF4),
         ),
         textTheme: Theme.of(context).textTheme
             .apply(bodyColor: Colors.white, displayColor: Colors.white)
@@ -500,6 +504,17 @@ class _FxRestaurantStudioScreenState extends State<FxRestaurantStudioScreen>
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         ),
+                chipTheme: ChipThemeData(
+          backgroundColor: const Color(0xFF18232E),
+          selectedColor: const Color(0xFF0F766E),
+          disabledColor: const Color(0xFF26313B),
+          secondarySelectedColor: const Color(0xFF0F766E),
+          labelStyle: const TextStyle(color: Color(0xFFE8EEF4), fontWeight: FontWeight.w600),
+          secondaryLabelStyle: const TextStyle(color: Colors.white),
+          side: const BorderSide(color: Color(0xFF536273)),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: FxMasterC.card,
@@ -513,12 +528,22 @@ class _FxRestaurantStudioScreenState extends State<FxRestaurantStudioScreen>
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: FxMasterC.primary, width: 1.4),
+            borderSide: const BorderSide(color: Color(0xFF5EEAD4), width: 1.6),
           ),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
             vertical: 14,
           ),
+          labelStyle: const TextStyle(
+            color: Color(0xFFD4DCE5),
+            fontWeight: FontWeight.w500,
+          ),
+          floatingLabelStyle: const TextStyle(
+            color: Color(0xFF5EEAD4),
+            fontWeight: FontWeight.w700,
+          ),
+          hintStyle: const TextStyle(color: Color(0xFFB0BBC6)),
+          helperStyle: const TextStyle(color: Color(0xFFB0BBC6), fontSize: 11),
         ),
         cardTheme: CardThemeData(
           color: FxMasterC.card,
@@ -1062,6 +1087,8 @@ class _FxCategoriesState extends State<_FxCategories> {
                       ),
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
+                        activeTrackColor: const Color(0xFF0F766E),
+                        activeThumbColor: Colors.white,
                         value: active,
                         title: const Text('Active'),
                         onChanged: (value) {
@@ -1250,9 +1277,12 @@ class _FxMenuState extends State<_FxMenu> {
               backgroundColor: FxMasterC.card2,
               title: Text(
                 existing == null ? 'Add Menu Item' : 'Edit Menu Item',
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white),
               ),
               content: SizedBox(
-                width: 720,
+                width: MediaQuery.sizeOf(context).width < 760
+                    ? MediaQuery.sizeOf(context).width * .82
+                    : 720,
                 child: SingleChildScrollView(
                   child: Column(
                     children: <Widget>[
@@ -1350,17 +1380,36 @@ class _FxMenuState extends State<_FxMenu> {
                         alignment: Alignment.centerLeft,
                         child: const Text(
                           'Allergens',
-                          style: TextStyle(fontWeight: FontWeight.w700),
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFFF3F6F9)),
                         ),
                       ),
                       const SizedBox(height: 6),
                       Wrap(
-                        spacing: 6,
+                        spacing: 8,
+                        runSpacing: 8,
                         children: fxAllergens
                             .map(
                               (item) => FilterChip(
-                                label: Text(item),
+                                label: Text(
+                                  item,
+                                  style: TextStyle(
+                                    color: allergens.contains(item) ? Colors.white : const Color(0xFFD4DCE5),
+                                    fontWeight: allergens.contains(item) ? FontWeight.w800 : FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
+                                ),
                                 selected: allergens.contains(item),
+                                showCheckmark: true,
+                                checkmarkColor: Colors.white,
+                                selectedColor: const Color(0xFF0F766E),
+                                backgroundColor: const Color(0xFF1A2936),
+                                side: BorderSide(
+                                  color: allergens.contains(item) ? const Color(0xFF5EEAD4) : const Color(0xFF3A4B5B),
+                                  width: allergens.contains(item) ? 1.3 : 1,
+                                ),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+                                labelPadding: const EdgeInsets.symmetric(horizontal: 3),
                                 onSelected: (value) {
                                   setDialog(() {
                                     if (value && !allergens.contains(item)) {
@@ -1378,17 +1427,36 @@ class _FxMenuState extends State<_FxMenu> {
                         alignment: Alignment.centerLeft,
                         child: const Text(
                           'Badges',
-                          style: TextStyle(fontWeight: FontWeight.w700),
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFFF3F6F9)),
                         ),
                       ),
                       const SizedBox(height: 6),
                       Wrap(
-                        spacing: 6,
+                        spacing: 8,
+                        runSpacing: 8,
                         children: fxBadges
                             .map(
                               (item) => FilterChip(
-                                label: Text(item),
+                                label: Text(
+                                  item,
+                                  style: TextStyle(
+                                    color: badges.contains(item) ? Colors.white : const Color(0xFFD4DCE5),
+                                    fontWeight: badges.contains(item) ? FontWeight.w800 : FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
+                                ),
                                 selected: badges.contains(item),
+                                showCheckmark: true,
+                                checkmarkColor: Colors.white,
+                                selectedColor: const Color(0xFF0F766E),
+                                backgroundColor: const Color(0xFF1A2936),
+                                side: BorderSide(
+                                  color: badges.contains(item) ? const Color(0xFF5EEAD4) : const Color(0xFF3A4B5B),
+                                  width: badges.contains(item) ? 1.3 : 1,
+                                ),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+                                labelPadding: const EdgeInsets.symmetric(horizontal: 3),
                                 onSelected: (value) {
                                   setDialog(() {
                                     if (value && !badges.contains(item)) {
@@ -1467,6 +1535,12 @@ class _FxMenuState extends State<_FxMenu> {
                         runSpacing: 8,
                         children: <Widget>[
                           OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFFE8EEF4),
+                              side: const BorderSide(color: Color(0xFF3A4B5B)),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
                             onPressed: () async {
                               final file = await FilePicker.pickFile(
                                 type: FileType.image,
@@ -1488,6 +1562,12 @@ class _FxMenuState extends State<_FxMenu> {
                             ),
                           ),
                           OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFFE8EEF4),
+                              side: const BorderSide(color: Color(0xFF3A4B5B)),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
                             onPressed: () async {
                               final file = await FilePicker.pickFile(
                                 type: FileType.video,
@@ -1513,7 +1593,7 @@ class _FxMenuState extends State<_FxMenu> {
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
                         value: active,
-                        title: const Text('Available'),
+                        title: const Text('Available', style: TextStyle(color: Color(0xFFE8EEF4), fontWeight: FontWeight.w600)),
                         onChanged: (value) {
                           setDialog(() => active = value);
                         },
@@ -1528,6 +1608,12 @@ class _FxMenuState extends State<_FxMenu> {
                   child: const Text('Cancel'),
                 ),
                 FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF0F766E),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(124, 46),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                   onPressed: () async {
                     final parsedPrice = double.tryParse(price.text.trim());
                     final parsedCalories = int.tryParse(kcal.text.trim()) ?? 0;
@@ -3788,6 +3874,7 @@ class _FxAudit extends StatefulWidget {
 class _FxAuditState extends State<_FxAudit> {
   final TextEditingController _searchController = TextEditingController();
   String _actionFilter = 'all';
+  bool _clearingAll = false;
 
   @override
   void dispose() {
@@ -3905,6 +3992,129 @@ class _FxAuditState extends State<_FxAudit> {
     }
   }
 
+  Future<void> _clearAllHistory() async {
+    if (_clearingAll) return;
+
+    final confirmation = TextEditingController();
+    final confirmed = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) => StatefulBuilder(
+            builder: (dialogContext, setDialogState) => AlertDialog(
+              backgroundColor: FxMasterC.card2,
+              title: Row(
+                children: <Widget>[
+                  const Icon(Icons.delete_forever_rounded, color: Color(0xFFFF8585)),
+                  const SizedBox(width: 10),
+                  const Expanded(child: Text('Clear all audit history')),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    const Text(
+                      'This permanently deletes every audit history record stored in Firebase, '
+                      'not just the records currently visible on this page.',
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'This action cannot be undone.',
+                      style: TextStyle(
+                        color: Color(0xFFFF8585),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Type CLEAR to confirm.'),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: confirmation,
+                      autofocus: false,
+                      onChanged: (_) => setDialogState(() {}),
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'Type CLEAR',
+                        filled: true,
+                        fillColor: FxMasterC.card,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: FxMasterC.border),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFB93845),
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: confirmation.text.trim().toUpperCase() == 'CLEAR'
+                      ? () => Navigator.of(dialogContext).pop(true)
+                      : null,
+                  icon: const Icon(Icons.delete_forever_rounded, size: 18),
+                  label: const Text('Delete all records'),
+                ),
+              ],
+            ),
+          ),
+        ) ??
+        false;
+
+    confirmation.dispose();
+    if (!confirmed || !mounted) return;
+
+    setState(() => _clearingAll = true);
+    var deletedCount = 0;
+
+    try {
+      // Delete in pages under Firestore's 500-write batch limit.
+      // No orderBy is intentional: delete every document, including legacy
+      // audit records that may not have a createdAt field.
+      while (true) {
+        final page = await FxMasterDb.audits.limit(400).get();
+        if (page.docs.isEmpty) break;
+
+        final batch = FxMasterDb.db.batch();
+        for (final doc in page.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+        deletedCount += page.docs.length;
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Audit history cleared. $deletedCount record(s) deleted.'),
+          ),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              deletedCount == 0
+                  ? 'Could not clear audit history: $error'
+                  : 'Partially cleared: $deletedCount record(s) deleted. Error: $error',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _clearingAll = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
@@ -4013,27 +4223,64 @@ class _FxAuditState extends State<_FxAudit> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Row(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: <Widget>[
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Text('Activity history', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
-                                SizedBox(height: 4),
-                                Text('A clear record of changes in this workspace.', style: TextStyle(fontSize: 12, color: Colors.white60)),
-                              ],
-                            ),
+                          Row(
+                            children: <Widget>[
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Text(
+                                      'Activity history',
+                                      style: TextStyle(fontSize: 23, fontWeight: FontWeight.w800),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      'A clear record of changes in this workspace.',
+                                      style: TextStyle(fontSize: 12, color: Colors.white60),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                                decoration: BoxDecoration(
+                                  color: FxMasterC.primary.withValues(alpha: .14),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: FxMasterC.primary.withValues(alpha: .26)),
+                                ),
+                                child: Text(
+                                  '${filtered.length} records',
+                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                            decoration: BoxDecoration(
-                              color: FxMasterC.primary.withValues(alpha: .14),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: FxMasterC.primary.withValues(alpha: .26)),
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: OutlinedButton.icon(
+                              onPressed: _clearingAll ? null : _clearAllHistory,
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFFFF8585),
+                                side: BorderSide(
+                                  color: const Color(0xFFFF8585).withValues(alpha: .55),
+                                ),
+                                backgroundColor: const Color(0xFFFF8585).withValues(alpha: .06),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                              ),
+                              icon: _clearingAll
+                                  ? const SizedBox(
+                                      width: 17,
+                                      height: 17,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : const Icon(Icons.delete_sweep_outlined, size: 18),
+                              label: Text(_clearingAll ? 'Clearing history…' : 'Clear all history'),
                             ),
-                            child: Text('${filtered.length} records', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
                           ),
                         ],
                       ),
